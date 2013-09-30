@@ -46,7 +46,7 @@ public class Connexion {
         return "Login/Mot de passe : " + this.login + "/" + this.password;
     }
     
-    public void login() throws OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException{
+    public void login(){
         //OAuthConsumer consumer = new CommonsHttpOAuthConsumer(Connexion.KEY, Connexion.SECRET_KEY);
         //consumer.setTokenWithSecret(accessToekn, accessSecret);
         //HttpGet request = new HttpGet();
