@@ -5,20 +5,26 @@
 package flickr;
 
 import java.awt.Container;
+import java.awt.Desktop;
 import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
+import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 
 /**
  *
  * @author peixoton
  */
-public class Flickr extends JFrame implements ActionListener{
+public class Flickr extends JFrame implements ActionListener {
 
     public Container contenuFenetre;
     public JPanel panelConnexion;
@@ -29,9 +35,11 @@ public class Flickr extends JFrame implements ActionListener{
     JLabel hint_identifiant;
     JLabel hint_password;
     JTextField identifiant;
-    JTextField password;
+    JPasswordField password;
     JButton submit_connexion;
     JButton submit_forgot;
+    /* Model connexion */
+    Connexion connexion_token;
 
     public Flickr() {
 
@@ -63,8 +71,7 @@ public class Flickr extends JFrame implements ActionListener{
 
         this.identifiant = new JTextField();
         this.identifiant.setText("Entrez votre identifiant");
-        this.password = new JTextField();
-        this.password.setText("Entrez votre password");
+        this.password = new JPasswordField();
 
         this.submit_connexion = new JButton("Connexion");
         this.submit_forgot = new JButton("Mot de passe oublié?");
@@ -75,14 +82,33 @@ public class Flickr extends JFrame implements ActionListener{
         this.panelConnexion.add(password);
         this.panelConnexion.add(submit_connexion);
         this.panelConnexion.add(submit_forgot);
-        
+
         this.submit_connexion.addActionListener(this);
+        this.submit_forgot.addActionListener(this);
 
     }
-    
-    public void actionPerformed(ActionEvent e){
-        if(e.getSource() == submit_connexion){
-            
+
+    @Override
+    public void actionPerformed(ActionEvent e) {
+        if (e.getSource() == submit_connexion) {
+            if (this.identifiant.getText().length() > 0 && this.password.getText().length() > 0) {
+                this.connexion_token = new Connexion(this.identifiant.getText(), this.password.getText());
+                System.out.println(this.connexion_token);
+            }
+        } else if (e.getSource() == submit_forgot) {
+            try {
+                URI uri = new URI("https://edit.europe.yahoo.com/forgotroot?done=https%3A%2F%2Flogin.yahoo.com%2Fconfig%2Fvalidate%3F.src%3Dflickrsignin%26.pc%3D8190%26.scrumb%3D0%26.pd%3Dc%253DJvVF95K62e6PzdPu7MBv2V8-%26.intl%3Dfr%26.done%3Dhttp%253A%252F%252Fwww.flickr.com%252Fsignin%252Fyahoo%252F%253Fredir%253Dhttp%25253A%25252F%25252Fwww.flickr.com%25252F&src=flickrsignin&partner=&intl=fr&lang=fr-FR");
+                Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
+                if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
+                    try {
+                        desktop.browse(uri);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } catch (URISyntaxException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }
     }
 

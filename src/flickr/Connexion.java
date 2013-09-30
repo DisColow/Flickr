@@ -36,4 +36,9 @@ public class Connexion {
             this.password = password;
     }
     
+    @Override
+    public String toString(){
+        return "Login/Mot de passe : " + this.login + "/" + this.password;
+    }
+    
 }
