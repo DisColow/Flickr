@@ -52,10 +52,10 @@ public class Connexion {
     }
     
     public void login() throws OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException{
-        OAuthConsumer consumer = new CommonsHttpOAuthConsumer(Connexion.KEY, Connexion.SECRET_KEY);
+        //OAuthConsumer consumer = new CommonsHttpOAuthConsumer(Connexion.KEY, Connexion.SECRET_KEY);
         //consumer.setTokenWithSecret(accessToekn, accessSecret);
-        HttpGet request = new HttpGet();
-        consumer.sign(request);
+        //HttpGet request = new HttpGet();
+        //consumer.sign(request);
     }
     
 }
