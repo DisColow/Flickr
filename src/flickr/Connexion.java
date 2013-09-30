@@ -4,6 +4,13 @@
  */
 package flickr;
 
+import oauth.signpost.OAuthConsumer;
+import oauth.signpost.commonshttp.CommonsHttpOAuthConsumer;
+import oauth.signpost.exception.OAuthCommunicationException;
+import oauth.signpost.exception.OAuthExpectationFailedException;
+import oauth.signpost.exception.OAuthMessageSignerException;
+import org.apache.http.client.methods.HttpGet;
+
 /**
  *
  * @author peixoton
@@ -12,6 +19,9 @@ public class Connexion {
     
     private String login;
     private String password;
+    
+    public static final String KEY = "5ba9bb9bbac0804efaccd0f9d5b4b756";
+    public static final String SECRET_KEY = "d44f09102f60a452";
     
     public Connexion(String login, String password){
         this.login = login;
@@ -41,8 +51,11 @@ public class Connexion {
         return "Login/Mot de passe : " + this.login + "/" + this.password;
     }
     
-    public login(){
-        OAuthConsummer 
+    public void login() throws OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException{
+        OAuthConsumer consumer = new CommonsHttpOAuthConsumer(Connexion.KEY, Connexion.SECRET_KEY);
+        //consumer.setTokenWithSecret(accessToekn, accessSecret);
+        HttpGet request = new HttpGet();
+        consumer.sign(request);
     }
     
 }
