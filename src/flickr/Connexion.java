@@ -41,4 +41,8 @@ public class Connexion {
         return "Login/Mot de passe : " + this.login + "/" + this.password;
     }
     
+    public login(){
+        OAuthConsummer 
+    }
+    
 }
