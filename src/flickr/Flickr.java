@@ -6,6 +6,7 @@ package flickr;
 
 import java.awt.Container;
 import java.awt.Desktop;
+import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
@@ -21,6 +22,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -44,6 +46,7 @@ public class Flickr extends JFrame implements ActionListener {
     public JPanel panelConnexion;
     public JPanel panelSearch;
     public JPanel imagePanel;
+    public JPanel panelPhotoZoomed;
     public static final int LARGEUR_FENETRE = 600;
     public static final int HAUTEUR_FENETRE = 400;
     public static final String api_key = "5ba9bb9bbac0804efaccd0f9d5b4b756";
@@ -52,47 +55,50 @@ public class Flickr extends JFrame implements ActionListener {
     public ArrayList<Photo> lesPhotos;
 
     /* Ecran de connexion */
-    JLabel hint_identifiant;
-    JLabel hint_password;
-    JTextField identifiant;
-    JPasswordField password;
-    JButton submit_connexion;
-    JButton submit_forgot;
+    public JLabel hint_identifiant;
+    public JLabel hint_password;
+    public JTextField identifiant;
+    public JPasswordField password;
+    public JButton submit_connexion;
+    public JButton submit_forgot;
     /* Model connexion */
-    Connexion connexion_token;
+    public Connexion connexion_token;
     
     /* Ecran de recherche */
-    JLabel hint_recherche;
-    JTextField field_recheche;
-    JButton bouton_recherche;
+    public JLabel hint_recherche;
+    public JTextField field_recheche;
+    public JButton bouton_recherche;
     
     /* Ecran des photos */
     
-    int nbCol = 4;
-    int nbLig = 4;
-    int widthImage = 100;
-    int heightImage = 100;
-    JButton images[];
+    public int nbCol = 2;
+    public int nbLig = 2;
+    public int widthImage = 100;
+    public int heightImage = 100;
+    public JButton images[];
+    public JButton retourRecherche;
     
     /* Zoom sur Photo */
     
-    JButton photoZoomed;
-    JPanel panelPhotoZoomed;
+    public JButton photoZoomed;
 
     public Flickr() {
 
         /*this.ecranConnexion();*/
-        this.ecranRecherche();
         this.contenuFenetre = this.getContentPane();
         this.contenuFenetre.setLayout(null);
-        /*this.contenuFenetre.add(this.panelConnexion);*/
-        this.contenuFenetre.add(this.panelSearch);
+        this.ecranRecherche();
+        /*this.contenuFenetre.add(this.panelConnexion);
+        this.contenuFenetre.add(this.panelSearch);*/
 
+        setLocation(100, 100);
+        setUndecorated(true);
         setVisible(true);
-        setSize(Flickr.LARGEUR_FENETRE, Flickr.HAUTEUR_FENETRE);
+        /*setSize(Flickr.LARGEUR_FENETRE, Flickr.HAUTEUR_FENETRE);*/
         setTitle("Flickr Project Application");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
+        setLayout(null);
     }
 
     public void ecranConnexion() {
@@ -130,23 +136,26 @@ public class Flickr extends JFrame implements ActionListener {
     
     public void ecranRecherche(){
         int width = 400;
-        int height = 200;
-        int x = this.LARGEUR_FENETRE / 2 - width / 2;
-        int y = this.HAUTEUR_FENETRE / 2 - height / 2;
+        int height = 85;
         
         this.panelSearch = new JPanel();
-        this.panelSearch.setLayout(new GridLayout(3,1));
-        this.panelSearch.setBounds(x, y, width, height);
+        this.panelSearch.setLayout(new FlowLayout());
+        this.panelSearch.setBounds(0, 0, width, height);
         
         this.hint_recherche = new JLabel("Entrez un mot-clef pour la recherche...");
         this.field_recheche = new JTextField();
         this.bouton_recherche = new JButton("Rechercher");
         
+        this.field_recheche.setColumns(20);
         this.panelSearch.add(this.hint_recherche);
         this.panelSearch.add(this.field_recheche);
         this.panelSearch.add(this.bouton_recherche);
         
         this.bouton_recherche.addActionListener(this);
+        
+        this.contenuFenetre.add(this.panelSearch);
+        
+        setSize(width, height);
     }
     
     public void ecranImages(){
@@ -164,22 +173,28 @@ public class Flickr extends JFrame implements ActionListener {
             
             for(int i = 0; i < this.nbCol * this.nbLig; i++){
             
-                String path = this.lesPhotos.get(i).photo_url;
-                System.out.println("Get Image from " + path);
-                URL url = new URL(path);
-                BufferedImage image = ImageIO.read(url);
-                image.getWidth();
-                image.getHeight();
-                System.out.println("Load image into frame...");
-                JButton button = new JButton(new ImageIcon(image));
-                this.images[i] = button;
-                this.images[i].setBorder(emptyBorder);
-                this.imagePanel.add(this.images[i]);
-                this.images[i].addActionListener(this);
+                if( i < (this.nbCol * this.nbLig) - 1 ){
+                    String path = this.lesPhotos.get(i).photo_url;
+                    System.out.println("Get Image from " + path);
+                    URL url = new URL(path);
+                    BufferedImage image = ImageIO.read(url);
+                    image.getWidth();
+                    image.getHeight();
+                    System.out.println("Load image into frame...");
+                    JButton button = new JButton(new ImageIcon(image));
+                    this.images[i] = button;
+                    this.images[i].setBorder(emptyBorder);
+                    this.imagePanel.add(this.images[i]);
+                    this.images[i].addActionListener(this);
+                }else{
+                    this.retourRecherche = new JButton("Retour à la recherche");
+                    this.imagePanel.add(retourRecherche);
+                    this.retourRecherche.addActionListener(this);
+                }
                 
             }
             
-            setSize(width, height + 20);
+            setSize(width, height);
             
         } catch (Exception exp) {
             exp.printStackTrace();
@@ -227,6 +242,12 @@ public class Flickr extends JFrame implements ActionListener {
             } catch (XMLStreamException ex) {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             }
+        }else if(e.getSource() == this.retourRecherche){
+            remove(this.panelSearch); 
+            remove(this.imagePanel);
+            ecranRecherche();
+            this.contenuFenetre.add(this.panelSearch);
+            this.panelSearch.setVisible(true);
         }else if(e.getSource() instanceof JButton ){
             System.out.println(e.getSource());
             JButton image = new JButton();
@@ -258,6 +279,7 @@ public class Flickr extends JFrame implements ActionListener {
                 setSize( theImage.getIconWidth(), theImage.getIconHeight() );
                 
             }else{
+                
                 int width = this.nbCol * this.widthImage;
                 int height = this.nbLig * this.heightImage + 20;
                 setSize(width, height);
