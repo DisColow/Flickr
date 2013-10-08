@@ -73,6 +73,11 @@ public class Flickr extends JFrame implements ActionListener {
     int widthImage = 100;
     int heightImage = 100;
     JButton images[];
+    
+    /* Zoom sur Photo */
+    
+    JButton photoZoomed;
+    JPanel panelPhotoZoomed;
 
     public Flickr() {
 
@@ -233,13 +238,18 @@ public class Flickr extends JFrame implements ActionListener {
                 }
             }
             
+            ImageIcon theImage = (ImageIcon) image.getIcon();
+            this.photoZoomed = new JButton(theImage);
+            Border emptyBorder = BorderFactory.createEmptyBorder();
+            this.photoZoomed.setBorder(emptyBorder);
             this.imagePanel.setVisible(false);
-            JPanel panelTemp = new JPanel();
-            panelTemp.setLayout(new GridLayout(1, 1));
-            panelTemp.add(image);
-            panelTemp.setVisible(true);
-            panelTemp.setBounds(0, 0, image.getWidth(), image.getHeight());
-            this.contenuFenetre.add(panelTemp);
+            this.panelPhotoZoomed = new JPanel();
+            this.panelPhotoZoomed.setLayout(new GridLayout(1, 1));
+            this.panelPhotoZoomed.add(this.photoZoomed);
+            this.panelPhotoZoomed.setVisible(true);
+            this.panelPhotoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight());
+            this.contenuFenetre.add(this.panelPhotoZoomed);
+            setSize( theImage.getIconWidth(), theImage.getIconHeight() );
             
         }
     }
