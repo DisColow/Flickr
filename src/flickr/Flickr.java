@@ -79,8 +79,8 @@ public class Flickr extends JFrame implements ActionListener {
     
     /* Ecran des photos */
     
-    public int nbCol = 2;
-    public int nbLig = 2;
+    public int nbCol = 8;
+    public int nbLig = 4;
     public int widthImage = 100;
     public int heightImage = 100;
     public JButton images[];
@@ -159,7 +159,7 @@ public class Flickr extends JFrame implements ActionListener {
         this.panelSearch.setBounds(0, 0, width, height);
         this.panelSearch.setBackground(Color.black);
         
-        this.hint_recherche = new JLabel("RECHERCHER SUR FLICKR");
+        this.hint_recherche = new JLabel("RECHERCHER SUR FLICKR", JLabel.CENTER);
         this.field_recheche = new JTextField();
         this.bouton_recherche = new JButton("RECHERCHER");
         
@@ -167,7 +167,8 @@ public class Flickr extends JFrame implements ActionListener {
         this.panelSearch.add(this.hint_recherche);
         this.panelSearch.add(this.field_recheche);
         this.panelSearch.add(this.bouton_recherche);
-        this.hint_recherche.setBounds(93, 40, 215, 16);
+        this.hint_recherche.setBounds(60, 40, 280, 16);
+        this.hint_recherche.setAlignmentX(JLabel.CENTER);
         this.hint_recherche.setFont(new Font("Verdana", Font.PLAIN, 16));
         this.hint_recherche.setForeground(Color.white);
         this.field_recheche.setBounds(60, 85, 280, 33);
