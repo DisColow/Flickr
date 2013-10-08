@@ -4,10 +4,12 @@
  */
 package flickr;
 
+import java.awt.Color;
 import java.awt.Container;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Toolkit;
@@ -15,6 +17,7 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -76,8 +79,8 @@ public class Flickr extends JFrame implements ActionListener {
     
     /* Ecran des photos */
     
-    public int nbCol = 4;
-    public int nbLig = 4;
+    public int nbCol = 2;
+    public int nbLig = 2;
     public int widthImage = 100;
     public int heightImage = 100;
     public JButton images[];
@@ -86,8 +89,10 @@ public class Flickr extends JFrame implements ActionListener {
     /* Zoom sur Photo */
     
     public JButton photoZoomed;
+    public JButton redirectWeb;
+    public Photo laPhoto;
 
-    public Flickr() {
+    public Flickr() throws MalformedURLException, IOException {
 
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         this.screenWidth = (int)screenSize.getWidth();
@@ -143,26 +148,50 @@ public class Flickr extends JFrame implements ActionListener {
 
     }
     
-    public void ecranRecherche(){
+    public void ecranRecherche() throws MalformedURLException, IOException{
         int width = 400;
-        int height = 85;
+        int height = 200;
+        
+        Border emptyBorder = BorderFactory.createEmptyBorder();
         
         this.panelSearch = new JPanel();
-        this.panelSearch.setLayout(new FlowLayout());
+        this.panelSearch.setLayout(null);
         this.panelSearch.setBounds(0, 0, width, height);
+        this.panelSearch.setBackground(Color.black);
         
-        this.hint_recherche = new JLabel("Entrez un mot-clef pour la recherche...");
+        this.hint_recherche = new JLabel("RECHERCHER SUR FLICKR");
         this.field_recheche = new JTextField();
-        this.bouton_recherche = new JButton("Rechercher");
+        this.bouton_recherche = new JButton("RECHERCHER");
         
         this.field_recheche.setColumns(20);
         this.panelSearch.add(this.hint_recherche);
         this.panelSearch.add(this.field_recheche);
         this.panelSearch.add(this.bouton_recherche);
+        this.hint_recherche.setBounds(93, 40, 215, 16);
+        this.hint_recherche.setFont(new Font("Verdana", Font.PLAIN, 16));
+        this.hint_recherche.setForeground(Color.white);
+        this.field_recheche.setBounds(60, 85, 280, 33);
+        this.field_recheche.setBorder(emptyBorder);
+        this.field_recheche.setBorder(BorderFactory.createCompoundBorder(
+        this.field_recheche.getBorder(), 
+        BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+        this.bouton_recherche.setBounds(60, 120, 280, 33);
+        this.bouton_recherche.setFont(new Font("Verdana", Font.PLAIN, 16));
+        this.bouton_recherche.setForeground(Color.white);
+        this.bouton_recherche.setBackground(new Color(255, 0, 128));
+        this.bouton_recherche.setBorder(emptyBorder);
         
         this.bouton_recherche.addActionListener(this);
         
         this.contenuFenetre.add(this.panelSearch);
+        
+        String path = "http://www.howdoyousay.fr/FlickrAPI/Images/bg.png";
+        URL url = new URL(path);
+        BufferedImage image = ImageIO.read(url);
+        JLabel fond = new JLabel(new ImageIcon(image));
+        this.retourRecherche = new JButton(new ImageIcon(image));
+        this.panelSearch.add(fond);
+        fond.setBounds(0, 0, width, height);
         
         setSize(width, height);
     }
@@ -196,7 +225,11 @@ public class Flickr extends JFrame implements ActionListener {
                     this.imagePanel.add(this.images[i]);
                     this.images[i].addActionListener(this);
                 }else{
-                    this.retourRecherche = new JButton("Retour à la recherche");
+                    String path = "http://www.howdoyousay.fr/FlickrAPI/Images/recherche.png";
+                    URL url = new URL(path);
+                    BufferedImage image = ImageIO.read(url);
+                    this.retourRecherche = new JButton(new ImageIcon(image));
+                    this.retourRecherche.setBorder(emptyBorder);
                     this.imagePanel.add(retourRecherche);
                     this.retourRecherche.addActionListener(this);
                 }
@@ -254,9 +287,29 @@ public class Flickr extends JFrame implements ActionListener {
         }else if(e.getSource() == this.retourRecherche){
             remove(this.panelSearch); 
             remove(this.imagePanel);
-            ecranRecherche();
+            try {
+                ecranRecherche();
+            } catch (MalformedURLException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
             this.contenuFenetre.add(this.panelSearch);
             this.panelSearch.setVisible(true);
+        }else if(e.getSource() == this.redirectWeb){
+            try {
+                URI uri = new URI(this.laPhoto.photo_url);
+                Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
+                if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
+                    try {
+                        desktop.browse(uri);
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+                }
+            } catch (URISyntaxException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
         }else if(e.getSource() instanceof JButton ){
             System.out.println(e.getSource());
             JButton image = new JButton();
@@ -265,7 +318,7 @@ public class Flickr extends JFrame implements ActionListener {
             for(int i = 0; i < this.nbCol * this.nbLig; i++){
                 if(e.getSource() == this.images[i]){
                     image = this.images[i];
-                    photo = this.lesPhotos.get(i);
+                    this.laPhoto = this.lesPhotos.get(i);
                     found = 1;
                 }
             }
@@ -278,19 +331,29 @@ public class Flickr extends JFrame implements ActionListener {
                 this.photoZoomed.setBorder(emptyBorder);
                 this.imagePanel.setVisible(false);
                 this.panelPhotoZoomed = new JPanel();
-                this.panelPhotoZoomed.setLayout(new GridLayout(1, 1));
+                this.panelPhotoZoomed.setLayout(null);
                 this.panelPhotoZoomed.add(this.photoZoomed);
                 this.photoZoomed.addActionListener(this);
+                this.photoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight());
+                
+                this.redirectWeb = new JButton("Afficher dans mon navigateur");
+                this.panelPhotoZoomed.add(this.redirectWeb );
+                this.redirectWeb.setBounds(0, theImage.getIconHeight(), theImage.getIconWidth(), 33 );
+                this.redirectWeb.setBackground(new Color(255, 0, 128));
+                this.redirectWeb.setForeground(Color.white);
+                this.redirectWeb.setBorder(emptyBorder);
+                this.redirectWeb.setFont(new Font("Verdana", Font.PLAIN, 16));
+                this.redirectWeb.addActionListener(this);
 
                 this.panelPhotoZoomed.setVisible(true);
-                this.panelPhotoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight());
+                this.panelPhotoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight() + 33 );
                 this.contenuFenetre.add(this.panelPhotoZoomed);
-                setSize( theImage.getIconWidth(), theImage.getIconHeight() );
+                setSize( theImage.getIconWidth(), theImage.getIconHeight() + 33 );
                 
             }else{
-                
+                /* Quand on clique sur la photo qui est déjà zoomée. */
                 int width = this.nbCol * this.widthImage;
-                int height = this.nbLig * this.heightImage + 20;
+                int height = this.nbLig * this.heightImage;
                 setSize(width, height);
                 this.panelPhotoZoomed.setVisible(false);
                 this.imagePanel.setVisible(true);
@@ -298,13 +361,10 @@ public class Flickr extends JFrame implements ActionListener {
             }
             
             
-        }else if(e.getSource() == this.photoZoomed){
-            /*this.panelPhotoZoomed.setVisible(false);
-            this.imagePanel.setVisible(true);*/
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws MalformedURLException, IOException {
         Flickr application = new Flickr();
     }
 }
