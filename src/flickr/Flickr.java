@@ -6,9 +6,11 @@ package flickr;
 
 import java.awt.Container;
 import java.awt.Desktop;
+import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
+import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
@@ -42,6 +44,9 @@ import org.xml.sax.helpers.XMLReaderFactory;
  */
 public class Flickr extends JFrame implements ActionListener {
 
+    public double screenWidth;
+    public double screenHeight;
+    
     public Container contenuFenetre;
     public JPanel panelConnexion;
     public JPanel panelSearch;
@@ -71,8 +76,8 @@ public class Flickr extends JFrame implements ActionListener {
     
     /* Ecran des photos */
     
-    public int nbCol = 2;
-    public int nbLig = 2;
+    public int nbCol = 4;
+    public int nbLig = 4;
     public int widthImage = 100;
     public int heightImage = 100;
     public JButton images[];
@@ -84,6 +89,10 @@ public class Flickr extends JFrame implements ActionListener {
 
     public Flickr() {
 
+        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+        this.screenWidth = (int)screenSize.getWidth();
+        this.screenHeight = (int)screenSize.getHeight();
+        
         /*this.ecranConnexion();*/
         this.contenuFenetre = this.getContentPane();
         this.contenuFenetre.setLayout(null);
