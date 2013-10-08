@@ -231,26 +231,45 @@ public class Flickr extends JFrame implements ActionListener {
             System.out.println(e.getSource());
             JButton image = new JButton();
             Photo photo = new Photo();
+            int found = 0;
             for(int i = 0; i < this.nbCol * this.nbLig; i++){
                 if(e.getSource() == this.images[i]){
                     image = this.images[i];
                     photo = this.lesPhotos.get(i);
+                    found = 1;
                 }
             }
             
-            ImageIcon theImage = (ImageIcon) image.getIcon();
-            this.photoZoomed = new JButton(theImage);
-            Border emptyBorder = BorderFactory.createEmptyBorder();
-            this.photoZoomed.setBorder(emptyBorder);
-            this.imagePanel.setVisible(false);
-            this.panelPhotoZoomed = new JPanel();
-            this.panelPhotoZoomed.setLayout(new GridLayout(1, 1));
-            this.panelPhotoZoomed.add(this.photoZoomed);
-            this.panelPhotoZoomed.setVisible(true);
-            this.panelPhotoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight());
-            this.contenuFenetre.add(this.panelPhotoZoomed);
-            setSize( theImage.getIconWidth(), theImage.getIconHeight() );
+            if(found == 1){
             
+                ImageIcon theImage = (ImageIcon) image.getIcon();
+                this.photoZoomed = new JButton(theImage);
+                Border emptyBorder = BorderFactory.createEmptyBorder();
+                this.photoZoomed.setBorder(emptyBorder);
+                this.imagePanel.setVisible(false);
+                this.panelPhotoZoomed = new JPanel();
+                this.panelPhotoZoomed.setLayout(new GridLayout(1, 1));
+                this.panelPhotoZoomed.add(this.photoZoomed);
+                this.photoZoomed.addActionListener(this);
+
+                this.panelPhotoZoomed.setVisible(true);
+                this.panelPhotoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight());
+                this.contenuFenetre.add(this.panelPhotoZoomed);
+                setSize( theImage.getIconWidth(), theImage.getIconHeight() );
+                
+            }else{
+                int width = this.nbCol * this.widthImage;
+                int height = this.nbLig * this.heightImage + 20;
+                setSize(width, height);
+                this.panelPhotoZoomed.setVisible(false);
+                this.imagePanel.setVisible(true);
+                
+            }
+            
+            
+        }else if(e.getSource() == this.photoZoomed){
+            /*this.panelPhotoZoomed.setVisible(false);
+            this.imagePanel.setVisible(true);*/
         }
     }
 
