@@ -52,6 +52,7 @@ public class Recherche {
     public String resultat;
     public HashMap<String, String> searchParams = new HashMap<String, String>();
     public static final String search_url = "http://api.flickr.com/services/rest/?method=flickr.photos.search";
+    public static ArrayList<Photo> lesPhotos = new ArrayList<Photo>();
     
     public Recherche(String motClef) throws URISyntaxException, IOException, SAXException, XMLStreamException{
         this.searchParams.put("api_key", Connexion.KEY);
@@ -96,6 +97,7 @@ public class Recherche {
                     XMLReader saxReader = XMLReaderFactory.createXMLReader();
                     saxReader.setContentHandler(new ParserXML());
                     saxReader.parse(s);
+                    
                     
                 }
             }finally {

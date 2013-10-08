@@ -10,18 +10,25 @@ import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
+import javax.swing.border.Border;
 import javax.xml.stream.XMLStreamException;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
@@ -36,11 +43,13 @@ public class Flickr extends JFrame implements ActionListener {
     public Container contenuFenetre;
     public JPanel panelConnexion;
     public JPanel panelSearch;
+    public JPanel imagePanel;
     public static final int LARGEUR_FENETRE = 600;
     public static final int HAUTEUR_FENETRE = 400;
     public static final String api_key = "5ba9bb9bbac0804efaccd0f9d5b4b756";
     public Recherche recherche;
     public ParserXML parser;
+    public ArrayList<Photo> lesPhotos;
 
     /* Ecran de connexion */
     JLabel hint_identifiant;
@@ -56,6 +65,14 @@ public class Flickr extends JFrame implements ActionListener {
     JLabel hint_recherche;
     JTextField field_recheche;
     JButton bouton_recherche;
+    
+    /* Ecran des photos */
+    
+    int nbCol = 4;
+    int nbLig = 4;
+    int widthImage = 100;
+    int heightImage = 100;
+    JButton images[];
 
     public Flickr() {
 
@@ -126,6 +143,43 @@ public class Flickr extends JFrame implements ActionListener {
         
         this.bouton_recherche.addActionListener(this);
     }
+    
+    public void ecranImages(){
+        try {
+            int width = this.nbCol * this.widthImage;
+            int height = this.nbLig * this.heightImage;
+            
+            this.imagePanel = new JPanel();
+            this.imagePanel.setLayout(new GridLayout(this.nbLig, this.nbLig));
+            this.imagePanel.setBounds(0, 0, width, height);
+            
+            this.images = new JButton[this.nbCol * this.nbLig];
+            
+            Border emptyBorder = BorderFactory.createEmptyBorder();
+            
+            for(int i = 0; i < this.nbCol * this.nbLig; i++){
+            
+                String path = this.lesPhotos.get(i).photo_url;
+                System.out.println("Get Image from " + path);
+                URL url = new URL(path);
+                BufferedImage image = ImageIO.read(url);
+                image.getWidth();
+                image.getHeight();
+                System.out.println("Load image into frame...");
+                JButton button = new JButton(new ImageIcon(image));
+                this.images[i] = button;
+                this.images[i].setBorder(emptyBorder);
+                this.imagePanel.add(this.images[i]);
+                this.images[i].addActionListener(this);
+                
+            }
+            
+            setSize(width, height + 20);
+            
+        } catch (Exception exp) {
+            exp.printStackTrace();
+        }
+    }
 
     @Override
     public void actionPerformed(ActionEvent e) {
@@ -147,7 +201,17 @@ public class Flickr extends JFrame implements ActionListener {
             }
         }else if(e.getSource() == this.bouton_recherche){
             try {
+                
                 recherche = new Recherche(this.field_recheche.getText());
+                this.lesPhotos = Recherche.lesPhotos;
+                if(this.lesPhotos.size() > 0){
+                    this.panelSearch.setVisible(false);
+                    this.ecranImages();
+                    this.contenuFenetre.add(this.imagePanel);
+                }else{
+                    
+                }
+                
 
             } catch (URISyntaxException ex) {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
@@ -158,6 +222,25 @@ public class Flickr extends JFrame implements ActionListener {
             } catch (XMLStreamException ex) {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             }
+        }else if(e.getSource() instanceof JButton ){
+            System.out.println(e.getSource());
+            JButton image = new JButton();
+            Photo photo = new Photo();
+            for(int i = 0; i < this.nbCol * this.nbLig; i++){
+                if(e.getSource() == this.images[i]){
+                    image = this.images[i];
+                    photo = this.lesPhotos.get(i);
+                }
+            }
+            
+            this.imagePanel.setVisible(false);
+            JPanel panelTemp = new JPanel();
+            panelTemp.setLayout(new GridLayout(1, 1));
+            panelTemp.add(image);
+            panelTemp.setVisible(true);
+            panelTemp.setBounds(0, 0, image.getWidth(), image.getHeight());
+            this.contenuFenetre.add(panelTemp);
+            
         }
     }
 

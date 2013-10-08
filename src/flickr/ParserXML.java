@@ -35,6 +35,7 @@ public class ParserXML implements ContentHandler{
     @Override
     public void endDocument() throws SAXException {
         System.out.println("End of the document.");
+        Recherche.lesPhotos = this.lesPhotos;
     }
 
     @Override
@@ -70,13 +71,13 @@ public class ParserXML implements ContentHandler{
                 onePhoto.server = value;
             }else if(name == "title"){
                 onePhoto.title = value;
+        
+                onePhoto.createURL();
+                System.out.println(onePhoto);
+                this.lesPhotos.add(onePhoto);
             }
             
         }
-        
-        onePhoto.createURL();
-        System.out.println(onePhoto);
-        this.lesPhotos.add(onePhoto);
         
     }
 
