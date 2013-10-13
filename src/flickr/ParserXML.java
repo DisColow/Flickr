@@ -24,28 +24,28 @@ public class ParserXML implements ContentHandler{
 
     @Override
     public void setDocumentLocator(Locator locator) {
-        System.out.println("Not used");
+        /*System.out.println("Not used");*/
     }
 
     @Override
     public void startDocument() throws SAXException {
-        System.out.println("Start of the document.");
+        /*System.out.println("Start of the document.");*/
     }
 
     @Override
     public void endDocument() throws SAXException {
-        System.out.println("End of the document.");
+        /*System.out.println("End of the document.");*/
         Recherche.lesPhotos = this.lesPhotos;
     }
 
     @Override
     public void startPrefixMapping(String prefix, String uri) throws SAXException {
-        System.out.println("Not used");
+        /*System.out.println("Not used");*/
     }
 
     @Override
     public void endPrefixMapping(String prefix) throws SAXException {
-        System.out.println("Not used");
+        /*System.out.println("Not used");*/
     }
 
     @Override
@@ -73,7 +73,6 @@ public class ParserXML implements ContentHandler{
                 onePhoto.title = value;
         
                 onePhoto.createURL();
-                System.out.println(onePhoto);
                 this.lesPhotos.add(onePhoto);
             }
             
@@ -83,26 +82,26 @@ public class ParserXML implements ContentHandler{
 
     @Override
     public void endElement(String uri, String localName, String qName) throws SAXException {
-        System.out.println("End element.");
+        /*System.out.println("End element.");*/
     }
 
     @Override
     public void characters(char[] ch, int start, int length) throws SAXException {
-        System.out.println("Not used but could be.");
+        /*System.out.println("Not used but could be.");*/
     }
 
     @Override
     public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
-        System.out.println("Not used");
+        /*System.out.println("Not used");*/
     }
 
     @Override
     public void processingInstruction(String target, String data) throws SAXException {
-        System.out.println("Not used");
+        /*System.out.println("Not used");*/
     }
 
     @Override
     public void skippedEntity(String name) throws SAXException {
-        System.out.println("Not used");
+        /*System.out.println("Not used");*/
     }
 }

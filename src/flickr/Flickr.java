@@ -15,8 +15,16 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -32,6 +40,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JPasswordField;
 import javax.swing.JTextField;
@@ -50,6 +59,15 @@ public class Flickr extends JFrame implements ActionListener {
     public static final double screenWidth = Toolkit.getDefaultToolkit().getScreenSize().getWidth();
     public static final double screenHeight = Toolkit.getDefaultToolkit().getScreenSize().getHeight();
     
+    public String whereAmI;
+    
+    public static int posX;
+    public static int posY;
+    
+    public static final String RECHERCHE = "Recherche";
+    public static final String RESULTATS = "Résultats";
+    public static final String ZOOM = "Zoom";
+    
     public Container contenuFenetre;
     public JPanel panelConnexion;
     public JPanel panelSearch;
@@ -61,6 +79,8 @@ public class Flickr extends JFrame implements ActionListener {
     public Recherche recherche;
     public ParserXML parser;
     public ArrayList<Photo> lesPhotos;
+    public int page = 1;
+    public static final int nbParPage = 64;
 
     /* Ecran de connexion */
     public JLabel hint_identifiant;
@@ -79,8 +99,8 @@ public class Flickr extends JFrame implements ActionListener {
     
     /* Ecran des photos */
     
-    public int nbCol = 8;
-    public int nbLig = 8;
+    public int nbCol = 4;
+    public int nbLig = 4;
     public int widthImage = 75;
     public int heightImage = 75;
     public JButton images[];
@@ -91,13 +111,39 @@ public class Flickr extends JFrame implements ActionListener {
     public JButton photoZoomed;
     public JButton redirectWeb;
     public Photo laPhoto;
+    
+    /* Menu */
+    
+    public JPanel panelMenu;
+    public JButton goToSearch;
+    public JButton goToResults;
+    public JButton goToWeb;
+    public JButton showInfos;
+    public JButton showHistory;
+    public JButton save;
+    public JLabel bgMenuTop;
+    public JLabel bgMenuBot;
+    public JButton nextPage;
+    public JButton previousPage;
+    public static final Color menuColor = new Color(17, 16, 16);
+    public int menuWidth = 41;
+    
+    /* Overlay chargement */
+    
+    public JPanel loadingPanel;
+    public JLabel loadingGif;
+    
 
     public Flickr() throws MalformedURLException, IOException {
         
         /*this.ecranConnexion();*/
         this.contenuFenetre = this.getContentPane();
         this.contenuFenetre.setLayout(null);
+        /*this.loadingPanel();*/
+        this.panelMenu();
         this.ecranRecherche();
+        this.whereAmI = Flickr.RECHERCHE;
+        this.page = 1;
         /*this.contenuFenetre.add(this.panelConnexion);
         this.contenuFenetre.add(this.panelSearch);*/
 
@@ -110,6 +156,38 @@ public class Flickr extends JFrame implements ActionListener {
         setResizable(false);
         setLayout(null);
         
+    }
+    
+    public void loadingPanel() throws IOException{
+        try {
+            
+            this.loadingPanel = new JPanel();
+            this.loadingPanel.setLayout(null);
+            this.loadingPanel.setSize( this.getWidth(), this.getHeight());
+            
+            this.loadingGif = new JLabel(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/ajax-loader.gif"))));
+            this.loadingGif.setSize(128, 15);
+            this.loadingGif.setLocation((int)(this.getWidth() / 2) - (int)(128/2), (int)(this.getHeight() /2) - (int)(15 / 2));
+            
+            this.loadingPanel.add(this.loadingGif);
+            this.loadingPanel.setOpaque(true);
+            this.loadingPanel.setBackground(new Color(0,0,0,50));
+            
+            this.contenuFenetre.add(this.loadingPanel, new Integer(1), 0);
+            
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        
+    }
+    
+    public void reagenceLoadingPanel(){
+        
+        this.loadingPanel.setSize( this.getWidth(), this.getHeight());
+        this.loadingGif.setLocation((int)(this.getWidth() / 2) - (int)(128/2), (int)(this.getHeight() /2) - (int)(15 / 2));
+        revalidate();
+        repaint();
+            
     }
 
     public void ecranConnexion() {
@@ -145,16 +223,166 @@ public class Flickr extends JFrame implements ActionListener {
 
     }
     
+    public void panelMenu() throws MalformedURLException, IOException{
+        this.panelMenu = new JPanel();
+        this.panelMenu.setLayout(null);
+        
+        this.bgMenuTop = new JLabel(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/menu_top.png"))));
+        this.bgMenuBot = new JLabel(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/menu_bot.png"))));
+        this.goToSearch = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_recherche.png"))));
+        this.save = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_sauvegarder.png"))));
+        this.showHistory = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_historique.png"))));
+        this.showInfos = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_informations.png"))));
+        this.goToWeb = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_web.png"))));
+        this.goToResults = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_retour.png"))));
+        this.nextPage = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_suivant.png"))));
+        this.previousPage = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_retour.png"))));
+        
+        this.panelMenu.add(bgMenuTop);
+        this.panelMenu.add(bgMenuBot);
+        this.panelMenu.add(goToSearch);
+        this.panelMenu.add(save);
+        this.panelMenu.add(showHistory);
+        this.panelMenu.add(showInfos);
+        this.panelMenu.add(goToWeb);
+        this.panelMenu.add(goToResults);
+        this.panelMenu.add(nextPage);
+        this.panelMenu.add(previousPage);
+        
+        this.bgMenuTop.setLocation(0,0);
+        this.bgMenuTop.setSize(41, 11);
+        this.bgMenuBot.setSize(41, 11);
+        
+        this.goToSearch.setSize(13, 10);
+        this.goToSearch.setLocation(14, 12);
+        this.goToSearch.setBorder(BorderFactory.createEmptyBorder());
+        this.goToSearch.setBackground(menuColor);
+        this.goToSearch.setForeground(menuColor);
+        
+        this.showHistory.setSize(13, 13);
+        this.showHistory.setLocation(14, 32);
+        this.showHistory.setBorder(BorderFactory.createEmptyBorder());
+        this.showHistory.setBackground(menuColor);
+        
+        this.save.setSize(13, 14);
+        this.save.setLocation(14, 55);
+        this.save.setBorder(BorderFactory.createEmptyBorder());
+        this.save.setBackground(menuColor);
+        
+        this.goToWeb.setSize(13, 13);
+        this.goToWeb.setLocation(12, 79);
+        this.goToWeb.setBorder(BorderFactory.createEmptyBorder());
+        this.goToWeb.setBackground(menuColor);
+        
+        this.showInfos.setSize(5, 10);
+        this.showInfos.setLocation(16, 102);
+        this.showInfos.setBorder(BorderFactory.createEmptyBorder());
+        this.showInfos.setBackground(menuColor);
+        
+        this.goToResults.setSize(13, 11);
+        this.goToResults.setLocation(12, 122);
+        this.goToResults.setBorder(BorderFactory.createEmptyBorder());
+        this.goToResults.setBackground(menuColor);
+        
+        this.nextPage.setSize(13, 11);
+        this.nextPage.setLocation(12, 55);
+        this.nextPage.setBorder(BorderFactory.createEmptyBorder());
+        this.nextPage.setBackground(menuColor);
+        
+        this.previousPage.setSize(13, 11);
+        this.previousPage.setLocation(12, 76);
+        this.previousPage.setBorder(BorderFactory.createEmptyBorder());
+        this.previousPage.setBackground(menuColor);
+        
+        this.contenuFenetre.add(this.panelMenu);
+        
+        this.panelMenu.setSize(41, 11);
+        this.panelMenu.setBackground(menuColor);
+        this.panelMenu.setVisible(true);
+        
+        this.goToSearch.addActionListener(this);
+        this.goToWeb.addActionListener(this);
+        this.goToResults.addActionListener(this);
+        this.nextPage.addActionListener(this);
+        this.previousPage.addActionListener(this);
+        this.save.addActionListener(this);
+        this.showInfos.addActionListener(this);
+        
+        this.panelMenu.addMouseListener(new MouseAdapter(){
+           @Override
+           public void mousePressed(MouseEvent e){
+              Flickr.posX=e.getX();
+              Flickr.posY=e.getY();
+           }
+        });
+        
+        this.panelMenu.addMouseMotionListener(new MouseAdapter(){
+             @Override
+             public void mouseDragged(MouseEvent evt){
+                //sets frame position when mouse dragged			
+                setLocation (evt.getXOnScreen()-Flickr.posX,evt.getYOnScreen()-Flickr.posY);
+             }
+        });
+        
+        setSize(41,11);
+        setLocation(100, 100);
+    }
+    
+    public void reagenceMenu(int height){
+        this.bgMenuBot.setLocation( 0, (height - 11));
+        this.panelMenu.setSize( this.menuWidth, height );
+        
+        if(this.whereAmI == Flickr.RECHERCHE){
+            this.goToSearch.setVisible(false);
+            this.save.setVisible(false);
+            this.goToWeb.setVisible(false);
+            this.showInfos.setVisible(false);
+            this.goToResults.setVisible(false);
+            this.nextPage.setVisible(false);
+            this.previousPage.setVisible(false);
+            this.showHistory.setLocation( 14, 12 );
+        }else if(this.whereAmI == Flickr.RESULTATS){
+            this.goToResults.setVisible(false);
+            this.goToSearch.setVisible(true);
+            if(this.lesPhotos.size() == 64)
+                this.nextPage.setVisible(true);
+            if(this.page > 1)
+                this.previousPage.setVisible(true);
+            this.goToWeb.setVisible(false);
+            this.save.setVisible(false);
+            this.showInfos.setVisible(false);
+            this.showHistory.setLocation(14, 32);
+        }else if(this.whereAmI == Flickr.ZOOM){
+            this.goToSearch.setVisible(true);
+            this.save.setVisible(true);
+            this.goToWeb.setVisible(true);
+            this.showInfos.setVisible(true);
+            this.goToResults.setVisible(true);
+            this.nextPage.setVisible(false);
+            this.previousPage.setVisible(false);
+        }
+    }
+    
     public void ecranRecherche() throws MalformedURLException, IOException{
+        /* Ecran d'accueil */
         int width = 400;
         int height = 200;
+        
+        this.page = 0;
+        
+        this.whereAmI = Flickr.RECHERCHE;
         
         Border emptyBorder = BorderFactory.createEmptyBorder();
         
         this.panelSearch = new JPanel();
         this.panelSearch.setLayout(null);
         this.panelSearch.setBounds(0, 0, width, height);
-        this.panelSearch.setBackground(Color.black);
+        this.panelSearch.setBackground( Flickr.menuColor );
+        
+        /*JLabel test = new JLabel( "Chargement...", new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/ajax-loader.gif"))), JLabel.CENTER);
+        this.panelSearch.add(test);
+        test.setSize(400, 200);
+        test.setBackground(new Color(0, 0, 0, 50));*/
         
         this.hint_recherche = new JLabel("RECHERCHER SUR FLICKR", JLabel.CENTER);
         this.field_recheche = new JTextField();
@@ -184,6 +412,8 @@ public class Flickr extends JFrame implements ActionListener {
         
         this.bouton_recherche.addActionListener(this);
         
+        this.bouton_recherche.setFocusPainted(false);
+        
         this.contenuFenetre.add(this.panelSearch);
         
         String path = "http://www.howdoyousay.fr/FlickrAPI/Images/bg.png";
@@ -193,51 +423,94 @@ public class Flickr extends JFrame implements ActionListener {
         this.retourRecherche = new JButton(new ImageIcon(image));
         this.panelSearch.add(fond);
         fond.setBounds(0, 0, width, height);
+        this.panelSearch.setLocation( this.menuWidth, 0 );
         
-        setLocation((int)(Flickr.screenWidth/2) - (width / 2), (int)(Flickr.screenHeight/2) - (height / 2));
-        setSize(width, height);
+        reagenceMenu(height);
+        
+        setLocation((int)(Flickr.screenWidth/2) - (width + this.menuWidth / 2), (int)(Flickr.screenHeight/2) - (height / 2));
+        setSize(width + this.menuWidth, height);
     }
     
     public void ecranImages(){
+        /* Liste des résultats */
         try {
+            
+            this.whereAmI = Flickr.RESULTATS;
+            
             int width = this.nbCol * this.widthImage;
             int height = this.nbLig * this.heightImage;
             
             this.imagePanel = new JPanel();
-            this.imagePanel.setLayout(new GridLayout(this.nbLig, this.nbLig));
-            this.imagePanel.setBounds(0, 0, width, height);
+            this.imagePanel.setBackground(Color.BLACK);
+            this.imagePanel.setLayout(null);
+            this.imagePanel.setBounds(0, 0, width + this.nbCol + 1 + this.menuWidth, height + this.nbLig + 1);
             
             this.images = new JButton[this.nbCol * this.nbLig];
             
             Border emptyBorder = BorderFactory.createEmptyBorder();
             
-            for(int i = 0; i < this.nbCol * this.nbLig - 1; i++){
+            int compteurImages = 0;
             
-                String path = this.lesPhotos.get(i).photo_url_thumb;
-                System.out.println("Get Image from " + path);
-                URL url = new URL(path);
-                BufferedImage image = ImageIO.read(url);
-                image.getWidth();
-                image.getHeight();
-                System.out.println("Load image into frame...");
-                JButton button = new JButton(new ImageIcon(image));
-                this.images[i] = button;
-                this.images[i].setBorder(emptyBorder);
-                this.imagePanel.add(this.images[i]);
-                this.images[i].addActionListener(this);
+            for(int i = 0; i < this.nbLig; i++){
+                
+                for(int j = 0; j < this.nbCol; j++){
+                    
+                    /*if( j  == (this.nbCol - 1) && (i + 1) == this.nbLig ){
+                        
+                        System.out.println("Yes");
+                        String path = "http://www.howdoyousay.fr/FlickrAPI/Images/recherche.png";
+                        URL url = new URL(path);
+                        BufferedImage image = ImageIO.read(url);
+                        this.retourRecherche = new JButton(new ImageIcon(image));
+                        this.retourRecherche.setBorder(emptyBorder);
+                        this.imagePanel.add(retourRecherche);
+                        this.retourRecherche.setLocation( (this.widthImage * i + ( 1 + i) ), this.heightImage * j + (1 + j) );
+                        this.retourRecherche.setSize(this.widthImage, this.heightImage);
+                        this.retourRecherche.addActionListener(this);
+                        
+                    }else{*/
+                    
+                    if(compteurImages < this.lesPhotos.size() ){
+                    
+                        String extension = this.lesPhotos.get(compteurImages).photo_url_thumb.substring(this.lesPhotos.get(compteurImages).photo_url_thumb.lastIndexOf(".") + 1, this.lesPhotos.get(compteurImages).photo_url_thumb.length());
+                        System.err.println(extension);
+                        String path = this.lesPhotos.get(compteurImages).photo_url_thumb;
+                        URL url = new URL(path);
+                        System.err.println(url);
+                        BufferedImage image = ImageIO.read(url);
+                        JButton button = new JButton(new ImageIcon(image));
+                        this.images[compteurImages] = button;
+                        this.images[compteurImages].setBorder(emptyBorder);
+                        this.imagePanel.add(this.images[compteurImages]);
+                        this.images[compteurImages].setLocation( (this.widthImage * i + ( 1 + i) ), this.heightImage * j + (1 + j) );
+                        this.images[compteurImages].setSize(this.widthImage, this.heightImage);
+                        this.images[compteurImages].addActionListener(this);
+
+                        compteurImages++;
+                    
+                    }else{
+                        
+                        break;
+                        
+                    }
+                    
+                }
+                
+                if(compteurImages < this.lesPhotos.size()){
+                    
+                }else{
+                    
+                    break;
+                    
+                }
                 
             }
             
-            String path = "http://www.howdoyousay.fr/FlickrAPI/Images/recherche.png";
-            URL url = new URL(path);
-            BufferedImage image = ImageIO.read(url);
-            this.retourRecherche = new JButton(new ImageIcon(image));
-            this.retourRecherche.setBorder(emptyBorder);
-            this.imagePanel.add(retourRecherche);
-            this.retourRecherche.addActionListener(this);
+            this.imagePanel.setLocation( this.menuWidth, 0);
+            reagenceMenu(height + this.nbLig + 1);
             
-            setLocation((int)(Flickr.screenWidth/2) - (width / 2), (int)(Flickr.screenHeight/2) - (height / 2));
-            setSize(width, height);
+            setLocation((int)(Flickr.screenWidth/2) - ((width + this.menuWidth) / 2), (int)(Flickr.screenHeight/2) - (height / 2));
+            setSize(width + this.nbCol + 1 + this.menuWidth, height + this.nbLig + 1);
             
         } catch (Exception exp) {
             exp.printStackTrace();
@@ -249,6 +522,7 @@ public class Flickr extends JFrame implements ActionListener {
         if (e.getSource() == submit_connexion) {
             
         } else if (e.getSource() == submit_forgot) {
+            /* J'ai oublié mon mot de passe */
             try {
                 URI uri = new URI("https://edit.europe.yahoo.com/forgotroot?done=https%3A%2F%2Flogin.yahoo.com%2Fconfig%2Fvalidate%3F.src%3Dflickrsignin%26.pc%3D8190%26.scrumb%3D0%26.pd%3Dc%253DJvVF95K62e6PzdPu7MBv2V8-%26.intl%3Dfr%26.done%3Dhttp%253A%252F%252Fwww.flickr.com%252Fsignin%252Fyahoo%252F%253Fredir%253Dhttp%25253A%25252F%25252Fwww.flickr.com%25252F&src=flickrsignin&partner=&intl=fr&lang=fr-FR");
                 Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
@@ -262,17 +536,30 @@ public class Flickr extends JFrame implements ActionListener {
             } catch (URISyntaxException ex) {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             }
+        }else if(e.getSource() == this.save){
+            
+            try {
+                String s = (String)JOptionPane.showInputDialog(this, "Choisissez un nom pour le fichier à enregistrer");
+                saveImage(this.laPhoto.photo_url_big, s + ".jpg");
+                JOptionPane.showMessageDialog(this, "Image enregistrée.");
+            } catch (IOException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
         }else if(e.getSource() == this.bouton_recherche){
+            /* Soumission d'une recherche */
             try {
                 
-                recherche = new Recherche(this.field_recheche.getText());
+                /*reagenceLoadingPanel();*/
+                recherche = new Recherche(this.field_recheche.getText(), this.page, this.nbParPage);
                 this.lesPhotos = Recherche.lesPhotos;
                 if(this.lesPhotos.size() > 0){
                     this.panelSearch.setVisible(false);
                     this.ecranImages();
                     this.contenuFenetre.add(this.imagePanel);
+                    writeInFile(this.field_recheche.getText());
                 }else{
-                    
+                    JOptionPane.showMessageDialog(panelConnexion, "La recherche n'a donné aucun résultat. Veuillez réessayer en changeant les mots-clefs.");
                 }
                 
 
@@ -285,9 +572,18 @@ public class Flickr extends JFrame implements ActionListener {
             } catch (XMLStreamException ex) {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             }
-        }else if(e.getSource() == this.retourRecherche){
+        }else if(e.getSource() == this.showInfos){
+            int imageWidth = this.photoZoomed.getIcon().getIconWidth();
+            int imageHeight = this.photoZoomed.getIcon().getIconHeight();
+            JOptionPane.showMessageDialog(this, 
+                    "Résolution de l'image: " + imageWidth + "x" + imageHeight + "\n" +
+                    "URL de l'image: " + this.laPhoto.photo_url
+            );
+        }else if(e.getSource() == this.goToSearch){
+            /* Retour à la recherche */
             remove(this.panelSearch); 
             remove(this.imagePanel);
+            /*remove(this.panelPhotoZoomed);*/
             try {
                 ecranRecherche();
             } catch (MalformedURLException ex) {
@@ -297,7 +593,76 @@ public class Flickr extends JFrame implements ActionListener {
             }
             this.contenuFenetre.add(this.panelSearch);
             this.panelSearch.setVisible(true);
-        }else if(e.getSource() == this.redirectWeb){
+        }else if( e.getSource() == this.nextPage ){
+            try {
+                
+                remove(this.panelSearch); 
+                remove(this.imagePanel);
+                this.lesPhotos = null;
+                
+                this.page++;
+                recherche = new Recherche(this.field_recheche.getText(), this.page, this.nbParPage);
+                this.lesPhotos = Recherche.lesPhotos;
+                if(this.lesPhotos.size() > 0){
+                    this.panelSearch.setVisible(false);
+                    this.ecranImages();
+                    this.contenuFenetre.add(this.imagePanel);
+                    revalidate();
+                    repaint();
+                }else{
+
+                }
+            } catch (URISyntaxException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SAXException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (XMLStreamException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }else if( e.getSource() == this.previousPage ){
+            try {
+                
+                remove(this.panelSearch); 
+                remove(this.imagePanel);
+                this.lesPhotos = null;
+                
+                this.page--;
+                recherche = new Recherche(this.field_recheche.getText(), this.page, this.nbParPage);
+                this.lesPhotos = Recherche.lesPhotos;
+                if(this.lesPhotos.size() > 0){
+                    this.panelSearch.setVisible(false);
+                    this.ecranImages();
+                    this.contenuFenetre.add(this.imagePanel);
+                    revalidate();
+                    repaint();
+                }else{
+
+                }
+            } catch (URISyntaxException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (IOException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (SAXException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            } catch (XMLStreamException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }else if( e.getSource() == this.goToResults){
+            
+            /* Retour à la liste des photos */
+            this.whereAmI = Flickr.RESULTATS;
+
+            int width = this.nbCol * this.widthImage + 1 + this.nbCol;
+            int height = this.nbLig * this.heightImage + 1 + this.nbLig;
+            setLocation((int)(Flickr.screenWidth/2) - ((width + this.menuWidth) / 2), (int)(Flickr.screenHeight/2) - (height / 2));
+            setSize(width + this.menuWidth, height);
+            this.panelPhotoZoomed.setVisible(false);
+            this.imagePanel.setVisible(true);
+            this.reagenceMenu(height);
+                
+        }else if(e.getSource() == this.goToWeb){
             try {
                 URI uri = new URI(this.laPhoto.page_url);
                 Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
@@ -312,10 +677,11 @@ public class Flickr extends JFrame implements ActionListener {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             }
         }else if(e.getSource() instanceof JButton ){
-            System.out.println(e.getSource());
+            /* Clique sur une photo de la liste ou une photo zoomée */
             JButton image = new JButton();
             Photo photo = new Photo();
             int found = 0;
+            
             for(int i = 0; i < this.nbCol * this.nbLig; i++){
                 if(e.getSource() == this.images[i]){
                     image = this.images[i];
@@ -326,11 +692,17 @@ public class Flickr extends JFrame implements ActionListener {
             
             if(found == 1){
                 try {
-                    String path = this.laPhoto.photo_url;
+                    /* Zoom sur une photo */
+                    
+                    this.whereAmI = Flickr.ZOOM;
+                    String path;
+                    if(this.screenWidth > 1280)
+                        path = this.laPhoto.photo_url_big;
+                    else
+                        path = this.laPhoto.photo_url;
                     System.out.println("Get Image from " + path);
                     URL url = new URL(path);
                     BufferedImage current_image = ImageIO.read(url);
-                    /*ImageIcon theImage = (ImageIcon) current_image.getIcon();*/
                     ImageIcon theImage = new ImageIcon(current_image);
                     this.photoZoomed = new JButton(theImage);
                     Border emptyBorder = BorderFactory.createEmptyBorder();
@@ -342,20 +714,25 @@ public class Flickr extends JFrame implements ActionListener {
                     this.photoZoomed.addActionListener(this);
                     this.photoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight());
                     
-                    this.redirectWeb = new JButton("Afficher dans mon navigateur");
+                    /*this.redirectWeb = new JButton("Afficher dans mon navigateur");
                     this.panelPhotoZoomed.add( this.redirectWeb );
                     this.redirectWeb.setBounds(0, theImage.getIconHeight(), theImage.getIconWidth(), 33 );
                     this.redirectWeb.setBackground(new Color(255, 0, 128));
                     this.redirectWeb.setForeground(Color.white);
                     this.redirectWeb.setBorder(emptyBorder);
                     this.redirectWeb.setFont(new Font("Verdana", Font.PLAIN, 16));
-                    this.redirectWeb.addActionListener(this);
+                    this.redirectWeb.addActionListener(this);*/
 
                     this.panelPhotoZoomed.setVisible(true);
-                    this.panelPhotoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight() + 33 );
+                    this.panelPhotoZoomed.setBounds(0, 0, theImage.getIconWidth() + this.menuWidth, theImage.getIconHeight());
                     this.contenuFenetre.add(this.panelPhotoZoomed);
-                    setLocation((int)(Flickr.screenWidth/2) - (theImage.getIconWidth() / 2), (int)(Flickr.screenHeight/2) - ((theImage.getIconHeight() + 33) / 2));
-                    setSize( theImage.getIconWidth(), theImage.getIconHeight() + 33 );
+                    
+                    this.panelPhotoZoomed.setLocation( this.menuWidth, 0 );
+                    
+                    reagenceMenu(theImage.getIconHeight());
+                    
+                    setLocation((int)(Flickr.screenWidth/2) - ((theImage.getIconWidth() + this.menuWidth) / 2), (int)(Flickr.screenHeight/2) - ((theImage.getIconHeight()) / 2));
+                    setSize( theImage.getIconWidth() + this.menuWidth, theImage.getIconHeight() );
                 } catch (MalformedURLException ex) {
                     Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
                 } catch (IOException ex) {
@@ -363,14 +740,17 @@ public class Flickr extends JFrame implements ActionListener {
                 }
                 
             }else{
-                /* Quand on clique sur la photo qui est déjà zoomée. */
-                int width = this.nbCol * this.widthImage;
-                int height = this.nbLig * this.heightImage;
-                setLocation((int)(Flickr.screenWidth/2) - (width / 2), (int)(Flickr.screenHeight/2) - (height / 2));
-                setSize(width, height);
+                /* Retour à la liste des photos */
+            
+                this.whereAmI = Flickr.RESULTATS;
+                
+                int width = this.nbCol * this.widthImage + 1 + this.nbCol;
+                int height = this.nbLig * this.heightImage + 1 + this.nbLig;
+                setLocation((int)(Flickr.screenWidth/2) - ((width + this.menuWidth) / 2), (int)(Flickr.screenHeight/2) - (height / 2));
+                setSize(width + this.menuWidth, height);
                 this.panelPhotoZoomed.setVisible(false);
                 this.imagePanel.setVisible(true);
-                
+                this.reagenceMenu(height);
             }
             
             
@@ -380,4 +760,40 @@ public class Flickr extends JFrame implements ActionListener {
     public static void main(String[] args) throws MalformedURLException, IOException {
         Flickr application = new Flickr();
     }
+    
+    public void writeInFile(String motClef){
+        FileWriter fStream = null;
+        try {
+            fStream = new FileWriter("historique.txt", true);
+            fStream.append(motClef);
+            fStream.append(System.getProperty("line.separator"));
+            fStream.flush();
+            fStream.close();
+        } catch (IOException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        } finally {
+            try {
+                fStream.close();
+            } catch (IOException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
+        }
+    }
+    
+    public void saveImage(String imageUrl, String destinationFile) throws IOException {
+        URL url = new URL(imageUrl);
+        InputStream is = url.openStream();
+        OutputStream os = new FileOutputStream(destinationFile);
+
+        byte[] b = new byte[2048];
+        int length;
+
+        while ((length = is.read(b)) != -1) {
+                os.write(b, 0, length);
+        }
+
+        is.close();
+        os.close();
+    }
+    
 }

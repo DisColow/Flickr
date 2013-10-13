@@ -54,9 +54,11 @@ public class Recherche {
     public static final String search_url = "http://api.flickr.com/services/rest/?method=flickr.photos.search";
     public static ArrayList<Photo> lesPhotos = new ArrayList<Photo>();
     
-    public Recherche(String motClef) throws URISyntaxException, IOException, SAXException, XMLStreamException{
+    public Recherche(String motClef, int page, int nbParPage) throws URISyntaxException, IOException, SAXException, XMLStreamException{
         this.searchParams.put("api_key", Connexion.KEY);
         this.searchParams.put("text", motClef);
+        this.searchParams.put("per_page", "" + nbParPage);
+        this.searchParams.put("page", "" + page);
         this.motClef = motClef;
         this.Historique = new ArrayList<String>();
         this.Historique.add(motClef);

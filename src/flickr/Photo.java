@@ -17,6 +17,7 @@ public class Photo {
     public String farm;
     public String title;
     public String photo_url;
+    public String photo_url_big;
     public String photo_url_thumb;
     public String page_url;
     
@@ -43,6 +44,7 @@ public class Photo {
     public void createURL(){
         this.photo_url_thumb = "http://farm" + this.farm + ".staticflickr.com/" + this.server + "/" + this.id + "_" + this.secret + "_s.jpg";
         this.photo_url = "http://farm" + this.farm + ".staticflickr.com/" + this.server + "/" + this.id + "_" + this.secret + ".jpg";
+        this.photo_url_big = "http://farm" + this.farm + ".staticflickr.com/" + this.server + "/" + this.id + "_" + this.secret + "_b.jpg";
         this.page_url = "http://flickr.com/photos/" + this.owner + "/" + this.id + "/";
     }
     
