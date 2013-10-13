@@ -35,8 +35,12 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collections;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.imageio.ImageIO;
@@ -680,14 +684,19 @@ public class Flickr extends JFrame implements ActionListener {
         while ((strLine = br.readLine()) != null){
             this.historique.add(strLine);
         }
+        Collections.reverse(this.historique);
         
     }
     
     public void writeInFile(String motClef){
+        
+        DateFormat dateFormat = new SimpleDateFormat("dd/MM/YY HH:mm");
+        Calendar cal = Calendar.getInstance();
+        
         FileWriter fStream = null;
         try {
             fStream = new FileWriter("historique.txt", true);
-            fStream.append(motClef);
+            fStream.append( /*dateFormat.format(cal.getTime()) + ": " + */motClef );
             fStream.append(System.getProperty("line.separator"));
             fStream.flush();
             fStream.close();
@@ -763,11 +772,12 @@ public class Flickr extends JFrame implements ActionListener {
                     "Voici l'historique de vos recherches récentes", "Historique", 1, null, this.historique.toArray(), hint_identifiant
         );
         
-        if( s == null ){
-            s = "";
+        if( s != null ){
+            
+            this.performSearch(s);
+            
         }
         
-        this.performSearch(s);
     }
     
     public void openUrl(String url) throws URISyntaxException{
