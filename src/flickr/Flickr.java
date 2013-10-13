@@ -18,12 +18,18 @@ import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -38,6 +44,7 @@ import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
+import javax.swing.JComboBox;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -60,6 +67,7 @@ public class Flickr extends JFrame implements ActionListener {
     public static final double screenHeight = Toolkit.getDefaultToolkit().getScreenSize().getHeight();
     
     public String whereAmI;
+    public ArrayList<String> historique;
     
     public static int posX;
     public static int posY;
@@ -125,6 +133,7 @@ public class Flickr extends JFrame implements ActionListener {
     public JLabel bgMenuBot;
     public JButton nextPage;
     public JButton previousPage;
+    public JComboBox listeHistorique;
     public static final Color menuColor = new Color(17, 16, 16);
     public int menuWidth = 41;
     
@@ -136,21 +145,25 @@ public class Flickr extends JFrame implements ActionListener {
 
     public Flickr() throws MalformedURLException, IOException {
         
-        /*this.ecranConnexion();*/
+        fetchHistorique();
+        
+        this.imagePanel = new JPanel();
+        this.panelMenu = new JPanel();
+        this.panelConnexion = new JPanel();
+        this.panelSearch = new JPanel();
+        this.panelPhotoZoomed = new JPanel();
+        
         this.contenuFenetre = this.getContentPane();
         this.contenuFenetre.setLayout(null);
-        /*this.loadingPanel();*/
+        
         this.panelMenu();
         this.ecranRecherche();
+        
         this.whereAmI = Flickr.RECHERCHE;
         this.page = 1;
-        /*this.contenuFenetre.add(this.panelConnexion);
-        this.contenuFenetre.add(this.panelSearch);*/
 
-        /*setLocation(100, 100);*/
         setUndecorated(true);
         setVisible(true);
-        /*setSize(Flickr.LARGEUR_FENETRE, Flickr.HAUTEUR_FENETRE);*/
         setTitle("Flickr Project Application");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
@@ -307,6 +320,7 @@ public class Flickr extends JFrame implements ActionListener {
         this.previousPage.addActionListener(this);
         this.save.addActionListener(this);
         this.showInfos.addActionListener(this);
+        this.showHistory.addActionListener(this);
         
         this.panelMenu.addMouseListener(new MouseAdapter(){
            @Override
@@ -455,21 +469,6 @@ public class Flickr extends JFrame implements ActionListener {
                 
                 for(int j = 0; j < this.nbCol; j++){
                     
-                    /*if( j  == (this.nbCol - 1) && (i + 1) == this.nbLig ){
-                        
-                        System.out.println("Yes");
-                        String path = "http://www.howdoyousay.fr/FlickrAPI/Images/recherche.png";
-                        URL url = new URL(path);
-                        BufferedImage image = ImageIO.read(url);
-                        this.retourRecherche = new JButton(new ImageIcon(image));
-                        this.retourRecherche.setBorder(emptyBorder);
-                        this.imagePanel.add(retourRecherche);
-                        this.retourRecherche.setLocation( (this.widthImage * i + ( 1 + i) ), this.heightImage * j + (1 + j) );
-                        this.retourRecherche.setSize(this.widthImage, this.heightImage);
-                        this.retourRecherche.addActionListener(this);
-                        
-                    }else{*/
-                    
                     if(compteurImages < this.lesPhotos.size() ){
                     
                         String extension = this.lesPhotos.get(compteurImages).photo_url_thumb.substring(this.lesPhotos.get(compteurImages).photo_url_thumb.lastIndexOf(".") + 1, this.lesPhotos.get(compteurImages).photo_url_thumb.length());
@@ -522,133 +521,47 @@ public class Flickr extends JFrame implements ActionListener {
         if (e.getSource() == submit_connexion) {
             
         } else if (e.getSource() == submit_forgot) {
-            /* J'ai oublié mon mot de passe */
+            
             try {
-                URI uri = new URI("https://edit.europe.yahoo.com/forgotroot?done=https%3A%2F%2Flogin.yahoo.com%2Fconfig%2Fvalidate%3F.src%3Dflickrsignin%26.pc%3D8190%26.scrumb%3D0%26.pd%3Dc%253DJvVF95K62e6PzdPu7MBv2V8-%26.intl%3Dfr%26.done%3Dhttp%253A%252F%252Fwww.flickr.com%252Fsignin%252Fyahoo%252F%253Fredir%253Dhttp%25253A%25252F%25252Fwww.flickr.com%25252F&src=flickrsignin&partner=&intl=fr&lang=fr-FR");
-                Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
-                if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
-                    try {
-                        desktop.browse(uri);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }
+                
+                /* J'ai oublié mon mot de passe */
+                this.actionForgottenPassword();
+                        
             } catch (URISyntaxException ex) {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             }
+                    
         }else if(e.getSource() == this.save){
             
-            try {
-                String s = (String)JOptionPane.showInputDialog(this, "Choisissez un nom pour le fichier à enregistrer");
-                saveImage(this.laPhoto.photo_url_big, s + ".jpg");
-                JOptionPane.showMessageDialog(this, "Image enregistrée.");
-            } catch (IOException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            this.actionSaveImage();
+            
+        }else if(e.getSource() == this.showHistory){
+            
+            this.searchFromHistory();
             
         }else if(e.getSource() == this.bouton_recherche){
+            
             /* Soumission d'une recherche */
-            try {
-                
-                /*reagenceLoadingPanel();*/
-                recherche = new Recherche(this.field_recheche.getText(), this.page, this.nbParPage);
-                this.lesPhotos = Recherche.lesPhotos;
-                if(this.lesPhotos.size() > 0){
-                    this.panelSearch.setVisible(false);
-                    this.ecranImages();
-                    this.contenuFenetre.add(this.imagePanel);
-                    writeInFile(this.field_recheche.getText());
-                }else{
-                    JOptionPane.showMessageDialog(panelConnexion, "La recherche n'a donné aucun résultat. Veuillez réessayer en changeant les mots-clefs.");
-                }
-                
-
-            } catch (URISyntaxException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (SAXException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (XMLStreamException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            this.performSearch(this.field_recheche.getText());
+            
         }else if(e.getSource() == this.showInfos){
-            int imageWidth = this.photoZoomed.getIcon().getIconWidth();
-            int imageHeight = this.photoZoomed.getIcon().getIconHeight();
-            JOptionPane.showMessageDialog(this, 
-                    "Résolution de l'image: " + imageWidth + "x" + imageHeight + "\n" +
-                    "URL de l'image: " + this.laPhoto.photo_url
-            );
+            
+            this.actionDisplayInfos();
+            
         }else if(e.getSource() == this.goToSearch){
-            /* Retour à la recherche */
-            remove(this.panelSearch); 
-            remove(this.imagePanel);
-            /*remove(this.panelPhotoZoomed);*/
-            try {
-                ecranRecherche();
-            } catch (MalformedURLException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            }
-            this.contenuFenetre.add(this.panelSearch);
-            this.panelSearch.setVisible(true);
+            
+            this.goBackToSearch();
+            
         }else if( e.getSource() == this.nextPage ){
-            try {
-                
-                remove(this.panelSearch); 
-                remove(this.imagePanel);
-                this.lesPhotos = null;
-                
-                this.page++;
-                recherche = new Recherche(this.field_recheche.getText(), this.page, this.nbParPage);
-                this.lesPhotos = Recherche.lesPhotos;
-                if(this.lesPhotos.size() > 0){
-                    this.panelSearch.setVisible(false);
-                    this.ecranImages();
-                    this.contenuFenetre.add(this.imagePanel);
-                    revalidate();
-                    repaint();
-                }else{
-
-                }
-            } catch (URISyntaxException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (SAXException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (XMLStreamException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            
+            this.page++;
+            this.performSearch(this.field_recheche.getText());
+            
         }else if( e.getSource() == this.previousPage ){
-            try {
-                
-                remove(this.panelSearch); 
-                remove(this.imagePanel);
-                this.lesPhotos = null;
-                
-                this.page--;
-                recherche = new Recherche(this.field_recheche.getText(), this.page, this.nbParPage);
-                this.lesPhotos = Recherche.lesPhotos;
-                if(this.lesPhotos.size() > 0){
-                    this.panelSearch.setVisible(false);
-                    this.ecranImages();
-                    this.contenuFenetre.add(this.imagePanel);
-                    revalidate();
-                    repaint();
-                }else{
-
-                }
-            } catch (URISyntaxException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (IOException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (SAXException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            } catch (XMLStreamException ex) {
-                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            
+            this.page--;
+            this.performSearch(this.field_recheche.getText());
+            
         }else if( e.getSource() == this.goToResults){
             
             /* Retour à la liste des photos */
@@ -663,19 +576,13 @@ public class Flickr extends JFrame implements ActionListener {
             this.reagenceMenu(height);
                 
         }else if(e.getSource() == this.goToWeb){
+            
             try {
-                URI uri = new URI(this.laPhoto.page_url);
-                Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
-                if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
-                    try {
-                        desktop.browse(uri);
-                    } catch (Exception ex) {
-                        ex.printStackTrace();
-                    }
-                }
+                this.actionDisplayInBrowser();
             } catch (URISyntaxException ex) {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             }
+            
         }else if(e.getSource() instanceof JButton ){
             /* Clique sur une photo de la liste ou une photo zoomée */
             JButton image = new JButton();
@@ -761,6 +668,21 @@ public class Flickr extends JFrame implements ActionListener {
         Flickr application = new Flickr();
     }
     
+    public void fetchHistorique() throws FileNotFoundException, IOException{
+        
+        this.historique = null;
+        this.historique = new ArrayList<String>();
+        FileInputStream fStream = null;
+        fStream = new FileInputStream("historique.txt");
+        DataInputStream in = new DataInputStream(fStream);
+        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        String strLine;
+        while ((strLine = br.readLine()) != null){
+            this.historique.add(strLine);
+        }
+        
+    }
+    
     public void writeInFile(String motClef){
         FileWriter fStream = null;
         try {
@@ -794,6 +716,122 @@ public class Flickr extends JFrame implements ActionListener {
 
         is.close();
         os.close();
+    }
+    
+    public void performSearch(String motClef){
+        try {
+            
+            /*reagenceLoadingPanel();*/
+            this.lesPhotos = null;
+            this.images = null;
+            this.imagePanel.setVisible(false);
+            this.panelPhotoZoomed.setVisible(false);
+            
+            recherche = new Recherche(motClef, this.page, this.nbParPage);
+            this.lesPhotos = Recherche.lesPhotos;
+            if(this.lesPhotos.size() > 0){
+                this.panelSearch.setVisible(false);
+                this.ecranImages();
+                this.imagePanel.setVisible(true);
+                this.contenuFenetre.add(this.imagePanel);
+                writeInFile(this.field_recheche.getText());
+                revalidate();
+                repaint();
+            }else{
+                this.ecranRecherche();
+                this.panelSearch.setVisible(true);
+                revalidate();
+                repaint();
+                JOptionPane.showMessageDialog(panelConnexion, "La recherche n'a donné aucun résultat. Veuillez réessayer en changeant les mots-clefs.");
+            }
+
+
+        } catch (URISyntaxException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (SAXException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (XMLStreamException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void searchFromHistory(){
+        String s = (String)JOptionPane.showInputDialog(
+                    this, 
+                    "Voici l'historique de vos recherches récentes", "Historique", 1, null, this.historique.toArray(), hint_identifiant
+        );
+        
+        if( s == null ){
+            s = "";
+        }
+        
+        this.performSearch(s);
+    }
+    
+    public void openUrl(String url) throws URISyntaxException{
+        URI uri = new URI(url);
+        Desktop desktop = Desktop.isDesktopSupported() ? Desktop.getDesktop() : null;
+        if (desktop != null && desktop.isSupported(Desktop.Action.BROWSE)) {
+            try {
+                desktop.browse(uri);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+    
+    public void actionForgottenPassword() throws URISyntaxException{
+        
+        openUrl("https://edit.europe.yahoo.com/forgotroot?done=https%3A%2F%2Flogin.yahoo.com%2Fconfig%2Fvalidate%3F.src%3Dflickrsignin%26.pc%3D8190%26.scrumb%3D0%26.pd%3Dc%253DJvVF95K62e6PzdPu7MBv2V8-%26.intl%3Dfr%26.done%3Dhttp%253A%252F%252Fwww.flickr.com%252Fsignin%252Fyahoo%252F%253Fredir%253Dhttp%25253A%25252F%25252Fwww.flickr.com%25252F&src=flickrsignin&partner=&intl=fr&lang=fr-FR");
+            
+    }
+    
+    public void actionSaveImage(){
+        try {
+            String s = (String)JOptionPane.showInputDialog(this, "Choisissez un nom pour le fichier à enregistrer");
+            saveImage(this.laPhoto.photo_url_big, s + ".jpg");
+            JOptionPane.showMessageDialog(this, "Image enregistrée.");
+        } catch (IOException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        }
+    }
+    
+    public void actionDisplayInfos(){
+        
+        int imageWidth = this.photoZoomed.getIcon().getIconWidth();
+        int imageHeight = this.photoZoomed.getIcon().getIconHeight();
+        JOptionPane.showMessageDialog(this, 
+                "Résolution de l'image: " + imageWidth + "x" + imageHeight + "\n" +
+                "URL de l'image: " + this.laPhoto.photo_url
+        );
+            
+    }
+    
+    public void goBackToSearch(){
+        
+        /* Retour à la recherche */
+        remove(this.panelSearch); 
+        this.imagePanel.setVisible(false);
+        this.panelPhotoZoomed.setVisible(false);
+
+        try {
+            ecranRecherche();
+        } catch (MalformedURLException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        } catch (IOException ex) {
+            Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+        }
+        this.contenuFenetre.add(this.panelSearch);
+        this.panelSearch.setVisible(true);
+            
+    }
+    
+    public void actionDisplayInBrowser() throws URISyntaxException{
+        
+        openUrl(this.laPhoto.page_url);
+        
     }
     
 }
