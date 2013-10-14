@@ -80,37 +80,29 @@ public class Recherche {
         /*consumer.setTokenWithSecret(accessToekn, accessSecret);*/
         HttpGet request = new HttpGet(url);
         System.out.println(request.getURI());
+        CloseableHttpClient httpclient = HttpClients.createDefault();
+        CloseableHttpResponse response = httpclient.execute(request);
         try {
-            consumer.sign(request);
-            CloseableHttpClient httpclient = HttpClients.createDefault();
-            CloseableHttpResponse response = httpclient.execute(request);
-            try {
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                    
-                    InputStream instream = entity.getContent();
-                    
-                    this.resultat = convertStreamToString(instream);
-                    System.out.println(resultat);
-                    
-                    /*InputStream is = new ByteArrayInputStream(this.resultat.getBytes());*/
-                    InputSource s = new InputSource(new StringReader(this.resultat)); 
+            
+            HttpEntity entity = response.getEntity();
+            if (entity != null) {
 
-                    XMLReader saxReader = XMLReaderFactory.createXMLReader();
-                    saxReader.setContentHandler(new ParserXML());
-                    saxReader.parse(s);
-                    
-                    
-                }
-            }finally {
-                response.close();
+                InputStream instream = entity.getContent();
+
+                this.resultat = convertStreamToString(instream);
+                System.out.println(resultat);
+
+                /*InputStream is = new ByteArrayInputStream(this.resultat.getBytes());*/
+                InputSource s = new InputSource(new StringReader(this.resultat)); 
+
+                XMLReader saxReader = XMLReaderFactory.createXMLReader();
+                saxReader.setContentHandler(new ParserXML());
+                saxReader.parse(s);
+
+
             }
-        } catch (OAuthMessageSignerException ex) {
-            Logger.getLogger(Recherche.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (OAuthExpectationFailedException ex) {
-            Logger.getLogger(Recherche.class.getName()).log(Level.SEVERE, null, ex);
-        } catch (OAuthCommunicationException ex) {
-            Logger.getLogger(Recherche.class.getName()).log(Level.SEVERE, null, ex);
+        }finally {
+            response.close();
         }
     }
     

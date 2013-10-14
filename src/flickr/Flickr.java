@@ -15,6 +15,7 @@ import java.awt.Insets;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
@@ -31,6 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.math.BigInteger;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,8 +43,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
+import java.util.Date;
+import java.util.Random;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -57,6 +62,9 @@ import javax.swing.JPasswordField;
 import javax.swing.JTextField;
 import javax.swing.border.Border;
 import javax.xml.stream.XMLStreamException;
+import oauth.signpost.exception.OAuthCommunicationException;
+import oauth.signpost.exception.OAuthExpectationFailedException;
+import oauth.signpost.exception.OAuthMessageSignerException;
 import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.XMLReaderFactory;
@@ -92,7 +100,7 @@ public class Flickr extends JFrame implements ActionListener {
     public ParserXML parser;
     public ArrayList<Photo> lesPhotos;
     public int page = 1;
-    public static final int nbParPage = 64;
+    public static final int nbParPage = 25;
 
     /* Ecran de connexion */
     public JLabel hint_identifiant;
@@ -111,8 +119,8 @@ public class Flickr extends JFrame implements ActionListener {
     
     /* Ecran des photos */
     
-    public int nbCol = 4;
-    public int nbLig = 4;
+    public int nbCol = 5;
+    public int nbLig = 5;
     public int widthImage = 75;
     public int heightImage = 75;
     public JButton images[];
@@ -240,6 +248,12 @@ public class Flickr extends JFrame implements ActionListener {
 
     }
     
+    /**
+     * Ajoute le panel de menu sur la gauche.
+     * Ajoute également l'événement permettant de déplacer la fenêtre sur le menu.
+     * @throws MalformedURLException
+     * @throws IOException 
+     */
     public void panelMenu() throws MalformedURLException, IOException{
         this.panelMenu = new JPanel();
         this.panelMenu.setLayout(null);
@@ -342,10 +356,12 @@ public class Flickr extends JFrame implements ActionListener {
              }
         });
         
-        setSize(41,11);
-        setLocation(100, 100);
     }
     
+    /**
+     * Adapte la hauteur du menu à la fenêtre.
+     * @param height: Hauteur de la fenêtre. 
+     */
     public void reagenceMenu(int height){
         this.bgMenuBot.setLocation( 0, (height - 11));
         this.panelMenu.setSize( this.menuWidth, height );
@@ -362,7 +378,7 @@ public class Flickr extends JFrame implements ActionListener {
         }else if(this.whereAmI == Flickr.RESULTATS){
             this.goToResults.setVisible(false);
             this.goToSearch.setVisible(true);
-            if(this.lesPhotos.size() == 64)
+            if(this.lesPhotos.size() == Flickr.nbParPage)
                 this.nextPage.setVisible(true);
             if(this.page > 1)
                 this.previousPage.setVisible(true);
@@ -386,7 +402,7 @@ public class Flickr extends JFrame implements ActionListener {
         int width = 400;
         int height = 200;
         
-        this.page = 0;
+        this.page = 1;
         
         this.whereAmI = Flickr.RECHERCHE;
         
@@ -445,7 +461,7 @@ public class Flickr extends JFrame implements ActionListener {
         
         reagenceMenu(height);
         
-        setLocation((int)(Flickr.screenWidth/2) - (width + this.menuWidth / 2), (int)(Flickr.screenHeight/2) - (height / 2));
+        setLocation((int)(Flickr.screenWidth/2) - ((width + this.menuWidth) / 2), (int)(Flickr.screenHeight/2) - (height / 2));
         setSize(width + this.menuWidth, height);
     }
     
@@ -480,16 +496,24 @@ public class Flickr extends JFrame implements ActionListener {
                         String path = this.lesPhotos.get(compteurImages).photo_url_thumb;
                         URL url = new URL(path);
                         System.err.println(url);
-                        BufferedImage image = ImageIO.read(url);
-                        JButton button = new JButton(new ImageIcon(image));
-                        this.images[compteurImages] = button;
-                        this.images[compteurImages].setBorder(emptyBorder);
-                        this.imagePanel.add(this.images[compteurImages]);
-                        this.images[compteurImages].setLocation( (this.widthImage * i + ( 1 + i) ), this.heightImage * j + (1 + j) );
-                        this.images[compteurImages].setSize(this.widthImage, this.heightImage);
-                        this.images[compteurImages].addActionListener(this);
+                        try{
+                            BufferedImage image = ImageIO.read(url);
+                            JButton button = new JButton(new ImageIcon(image));
+                            this.images[compteurImages] = button;
+                            this.images[compteurImages].setBorder(emptyBorder);
+                            this.imagePanel.add(this.images[compteurImages]);
+                            this.images[compteurImages].setLocation( (this.widthImage * i + ( 1 + i) ), this.heightImage * j + (1 + j) );
+                            this.images[compteurImages].setSize(this.widthImage, this.heightImage);
+                            this.images[compteurImages].addActionListener(this);
+                        }catch(IllegalArgumentException ex){
+                            
+                        }catch(IIOException test){
+                            
+                        }finally{
 
-                        compteurImages++;
+                            compteurImages++;
+                        
+                        }
                     
                     }else{
                         
@@ -541,12 +565,16 @@ public class Flickr extends JFrame implements ActionListener {
             
         }else if(e.getSource() == this.showHistory){
             
-            this.searchFromHistory();
+            try {
+                this.searchFromHistory();
+            } catch (IOException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
             
         }else if(e.getSource() == this.bouton_recherche){
             
             /* Soumission d'une recherche */
-            this.performSearch(this.field_recheche.getText());
+            this.performSearch(this.field_recheche.getText(), true);
             
         }else if(e.getSource() == this.showInfos){
             
@@ -558,13 +586,16 @@ public class Flickr extends JFrame implements ActionListener {
             
         }else if( e.getSource() == this.nextPage ){
             
+            System.err.println(this.field_recheche.getText());
+            System.err.println("Prev page:" + this.page);
             this.page++;
-            this.performSearch(this.field_recheche.getText());
+            System.err.println("" + this.page);
+            this.performSearch(this.field_recheche.getText(), false);
             
         }else if( e.getSource() == this.previousPage ){
             
             this.page--;
-            this.performSearch(this.field_recheche.getText());
+            this.performSearch(this.field_recheche.getText(), false);
             
         }else if( e.getSource() == this.goToResults){
             
@@ -668,8 +699,9 @@ public class Flickr extends JFrame implements ActionListener {
         }
     }
 
-    public static void main(String[] args) throws MalformedURLException, IOException {
+    public static void main(String[] args) throws MalformedURLException, IOException, SAXException, URISyntaxException, OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException {
         Flickr application = new Flickr();
+        Connexion test = new Connexion("Bob", "Marley");
     }
     
     public void fetchHistorique() throws FileNotFoundException, IOException{
@@ -727,7 +759,7 @@ public class Flickr extends JFrame implements ActionListener {
         os.close();
     }
     
-    public void performSearch(String motClef){
+    public void performSearch(String motClef, boolean saveSearch){
         try {
             
             /*reagenceLoadingPanel();*/
@@ -743,15 +775,24 @@ public class Flickr extends JFrame implements ActionListener {
                 this.ecranImages();
                 this.imagePanel.setVisible(true);
                 this.contenuFenetre.add(this.imagePanel);
-                writeInFile(this.field_recheche.getText());
+                if(saveSearch == true)
+                    writeInFile(this.field_recheche.getText());
                 revalidate();
                 repaint();
             }else{
+                this.page = 1;
+                this.panelSearch.setVisible(false);
+                remove(this.panelSearch);
                 this.ecranRecherche();
                 this.panelSearch.setVisible(true);
                 revalidate();
                 repaint();
-                JOptionPane.showMessageDialog(panelConnexion, "La recherche n'a donné aucun résultat. Veuillez réessayer en changeant les mots-clefs.");
+                String choixPossibles[] = {"Réessayer", "Nouvelle recherche"};
+                int retour = JOptionPane.showOptionDialog(this, "La recherche n'a donné aucun résultat. Veuillez réessayer en changeant les mots-clefs (cela peut provenir d'une surcharge des serveurs).", "Recherche", 0, 0, null, choixPossibles, choixPossibles[1]); 
+                if(retour == 0){
+                    this.performSearch(motClef, false);
+                }
+                /*JOptionPane.showMessageDialog(panelConnexion, "La recherche n'a donné aucun résultat. Veuillez réessayer en changeant les mots-clefs (cela peut provenir d'une surcharge des serveurs).");*/
             }
 
 
@@ -766,7 +807,10 @@ public class Flickr extends JFrame implements ActionListener {
         }
     }
     
-    public void searchFromHistory(){
+    public void searchFromHistory() throws IOException{
+        
+        this.fetchHistorique();
+        
         String s = (String)JOptionPane.showInputDialog(
                     this, 
                     "Voici l'historique de vos recherches récentes", "Historique", 1, null, this.historique.toArray(), hint_identifiant
@@ -774,7 +818,7 @@ public class Flickr extends JFrame implements ActionListener {
         
         if( s != null ){
             
-            this.performSearch(s);
+            this.performSearch(s, false);
             
         }
         
@@ -822,6 +866,7 @@ public class Flickr extends JFrame implements ActionListener {
     public void goBackToSearch(){
         
         /* Retour à la recherche */
+        this.page = 1;
         remove(this.panelSearch); 
         this.imagePanel.setVisible(false);
         this.panelPhotoZoomed.setVisible(false);
