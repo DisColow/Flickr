@@ -79,7 +79,9 @@ public class Flickr extends JFrame implements ActionListener {
     public static final double screenHeight = Toolkit.getDefaultToolkit().getScreenSize().getHeight();
     
     public String whereAmI;
+    public String whereIWas;
     public ArrayList<String> historique;
+    public ArrayList<String> favorites;
     
     public static int posX;
     public static int posY;
@@ -87,6 +89,7 @@ public class Flickr extends JFrame implements ActionListener {
     public static final String RECHERCHE = "Recherche";
     public static final String RESULTATS = "Résultats";
     public static final String ZOOM = "Zoom";
+    public static final String FAVORIS = "Favoris";
     
     public Container contenuFenetre;
     public JPanel panelConnexion;
@@ -145,6 +148,8 @@ public class Flickr extends JFrame implements ActionListener {
     public JLabel bgMenuBot;
     public JButton nextPage;
     public JButton previousPage;
+    public JButton favoritesList;
+    public JButton addToFavorites;
     public JComboBox listeHistorique;
     public static final Color menuColor = new Color(17, 16, 16);
     public int menuWidth = 41;
@@ -210,7 +215,7 @@ public class Flickr extends JFrame implements ActionListener {
         
         this.loadingPanel.setSize( this.getWidth(), this.getHeight());
         this.loadingGif.setLocation((int)(this.getWidth() / 2) - (int)(128/2), (int)(this.getHeight() /2) - (int)(15 / 2));
-        revalidate();
+        //revalidate();
         repaint();
             
     }
@@ -268,6 +273,8 @@ public class Flickr extends JFrame implements ActionListener {
         this.goToResults = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_retour.png"))));
         this.nextPage = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_suivant.png"))));
         this.previousPage = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_retour.png"))));
+        this.favoritesList = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icone_list_favoris.png"))));
+        this.addToFavorites = new JButton(new ImageIcon(ImageIO.read(new URL("http://www.howdoyousay.fr/FlickrAPI/Images/icon_ajouter_favoris.png"))));
         
         this.panelMenu.add(bgMenuTop);
         this.panelMenu.add(bgMenuBot);
@@ -279,6 +286,8 @@ public class Flickr extends JFrame implements ActionListener {
         this.panelMenu.add(goToResults);
         this.panelMenu.add(nextPage);
         this.panelMenu.add(previousPage);
+        this.panelMenu.add(favoritesList);
+        this.panelMenu.add(addToFavorites);
         
         this.bgMenuTop.setLocation(0,0);
         this.bgMenuTop.setSize(41, 11);
@@ -289,6 +298,11 @@ public class Flickr extends JFrame implements ActionListener {
         this.goToSearch.setBorder(BorderFactory.createEmptyBorder());
         this.goToSearch.setBackground(menuColor);
         this.goToSearch.setForeground(menuColor);
+        
+        this.favoritesList.setSize(16, 16);
+        this.favoritesList.setLocation(12, 32);
+        this.favoritesList.setBorder(BorderFactory.createEmptyBorder());
+        this.favoritesList.setBackground(menuColor);
         
         this.showHistory.setSize(13, 13);
         this.showHistory.setLocation(14, 32);
@@ -315,6 +329,11 @@ public class Flickr extends JFrame implements ActionListener {
         this.goToResults.setBorder(BorderFactory.createEmptyBorder());
         this.goToResults.setBackground(menuColor);
         
+        this.addToFavorites.setSize(16, 16);
+        this.addToFavorites.setLocation(12, 143);
+        this.addToFavorites.setBorder(BorderFactory.createEmptyBorder());
+        this.addToFavorites.setBackground(menuColor);
+        
         this.nextPage.setSize(13, 11);
         this.nextPage.setLocation(12, 55);
         this.nextPage.setBorder(BorderFactory.createEmptyBorder());
@@ -339,6 +358,8 @@ public class Flickr extends JFrame implements ActionListener {
         this.save.addActionListener(this);
         this.showInfos.addActionListener(this);
         this.showHistory.addActionListener(this);
+        this.favoritesList.addActionListener(this);
+        this.addToFavorites.addActionListener(this);
         
         this.panelMenu.addMouseListener(new MouseAdapter(){
            @Override
@@ -366,27 +387,49 @@ public class Flickr extends JFrame implements ActionListener {
         this.bgMenuBot.setLocation( 0, (height - 11));
         this.panelMenu.setSize( this.menuWidth, height );
         
+        System.err.println(whereAmI);
+        
         if(this.whereAmI == Flickr.RECHERCHE){
             this.goToSearch.setVisible(false);
             this.save.setVisible(false);
             this.goToWeb.setVisible(false);
             this.showInfos.setVisible(false);
             this.goToResults.setVisible(false);
+            this.favoritesList.setVisible(true);
             this.nextPage.setVisible(false);
+            this.addToFavorites.setVisible(false);
             this.previousPage.setVisible(false);
             this.showHistory.setLocation( 14, 12 );
-        }else if(this.whereAmI == Flickr.RESULTATS){
+            this.favoritesList.setLocation(12, 32);
+        }else if(this.whereAmI == Flickr.RESULTATS || this.whereAmI == Flickr.FAVORIS){
+            this.addToFavorites.setVisible(false);
             this.goToResults.setVisible(false);
+            this.favoritesList.setVisible(true);
             this.goToSearch.setVisible(true);
-            if(this.lesPhotos.size() == Flickr.nbParPage)
+            this.favoritesList.setLocation(12, 97);
+            if(this.lesPhotos.size() == Flickr.nbParPage && this.whereAmI != Flickr.FAVORIS)
                 this.nextPage.setVisible(true);
-            if(this.page > 1)
+            if(this.page > 1 && this.whereAmI != Flickr.FAVORIS){
                 this.previousPage.setVisible(true);
+            }
             this.goToWeb.setVisible(false);
             this.save.setVisible(false);
             this.showInfos.setVisible(false);
             this.showHistory.setLocation(14, 32);
+            
+            if(this.whereAmI == Flickr.FAVORIS){
+                this.favoritesList.setLocation(12, 55);
+            }
+            
         }else if(this.whereAmI == Flickr.ZOOM){
+            if(this.whereIWas != Flickr.FAVORIS)
+                this.addToFavorites.setVisible(true);
+            this.favoritesList.setVisible(true);
+            if(this.whereIWas == Flickr.FAVORIS){
+                this.favoritesList.setLocation(12,143);
+            }else{
+                this.favoritesList.setLocation(12,166);
+            }
             this.goToSearch.setVisible(true);
             this.save.setVisible(true);
             this.goToWeb.setVisible(true);
@@ -469,7 +512,8 @@ public class Flickr extends JFrame implements ActionListener {
         /* Liste des résultats */
         try {
             
-            this.whereAmI = Flickr.RESULTATS;
+            if(this.whereAmI != Flickr.FAVORIS)
+                this.whereAmI = Flickr.RESULTATS;
             
             int width = this.nbCol * this.widthImage;
             int height = this.nbLig * this.heightImage;
@@ -563,10 +607,38 @@ public class Flickr extends JFrame implements ActionListener {
             
             this.actionSaveImage();
             
+        }else if(e.getSource() == this.addToFavorites){
+            
+            actionAddToFavorites();
+            
         }else if(e.getSource() == this.showHistory){
             
             try {
                 this.searchFromHistory();
+            } catch (IOException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
+            }
+            
+        }else if(e.getSource() == this.favoritesList){
+            
+            try {
+                
+                this.whereAmI = Flickr.FAVORIS;
+                this.fetchFavorites();
+                this.loadFromFavorites();
+                this.imagePanel.setVisible(false);
+                this.panelPhotoZoomed.setVisible(false);
+
+                if(this.lesPhotos.size() > 0){
+                    this.panelSearch.setVisible(false);
+                    this.ecranImages();
+                    this.imagePanel.setVisible(true);
+                    this.contenuFenetre.add(this.imagePanel);
+                    repaint();
+                }
+                
+            } catch (FileNotFoundException ex) {
+                Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             } catch (IOException ex) {
                 Logger.getLogger(Flickr.class.getName()).log(Level.SEVERE, null, ex);
             }
@@ -600,7 +672,7 @@ public class Flickr extends JFrame implements ActionListener {
         }else if( e.getSource() == this.goToResults){
             
             /* Retour à la liste des photos */
-            this.whereAmI = Flickr.RESULTATS;
+            this.whereAmI = this.whereIWas;
 
             int width = this.nbCol * this.widthImage + 1 + this.nbCol;
             int height = this.nbLig * this.heightImage + 1 + this.nbLig;
@@ -636,9 +708,10 @@ public class Flickr extends JFrame implements ActionListener {
                 try {
                     /* Zoom sur une photo */
                     
+                    this.whereIWas = this.whereAmI;
                     this.whereAmI = Flickr.ZOOM;
                     String path;
-                    if(this.screenWidth > 1280)
+                    if(this.screenWidth >= 1024 && this.screenHeight >= 1024 )
                         path = this.laPhoto.photo_url_big;
                     else
                         path = this.laPhoto.photo_url;
@@ -683,8 +756,8 @@ public class Flickr extends JFrame implements ActionListener {
                 
             }else{
                 /* Retour à la liste des photos */
-            
-                this.whereAmI = Flickr.RESULTATS;
+                
+                this.whereAmI = this.whereIWas;
                 
                 int width = this.nbCol * this.widthImage + 1 + this.nbCol;
                 int height = this.nbLig * this.heightImage + 1 + this.nbLig;
@@ -720,15 +793,15 @@ public class Flickr extends JFrame implements ActionListener {
         
     }
     
-    public void writeInFile(String motClef){
+    public void writeInFile(String motClef, String fichier){
         
-        DateFormat dateFormat = new SimpleDateFormat("dd/MM/YY HH:mm");
-        Calendar cal = Calendar.getInstance();
+        /*DateFormat dateFormat = new SimpleDateFormat("dd/MM/YY HH:mm");
+        Calendar cal = Calendar.getInstance();*/
         
         FileWriter fStream = null;
         try {
-            fStream = new FileWriter("historique.txt", true);
-            fStream.append( /*dateFormat.format(cal.getTime()) + ": " + */motClef );
+            fStream = new FileWriter(fichier, true);
+            fStream.append( motClef );
             fStream.append(System.getProperty("line.separator"));
             fStream.flush();
             fStream.close();
@@ -776,8 +849,8 @@ public class Flickr extends JFrame implements ActionListener {
                 this.imagePanel.setVisible(true);
                 this.contenuFenetre.add(this.imagePanel);
                 if(saveSearch == true)
-                    writeInFile(this.field_recheche.getText());
-                revalidate();
+                    writeInFile(this.field_recheche.getText(), "historique.txt");
+                //revalidate();
                 repaint();
             }else{
                 this.page = 1;
@@ -785,7 +858,7 @@ public class Flickr extends JFrame implements ActionListener {
                 remove(this.panelSearch);
                 this.ecranRecherche();
                 this.panelSearch.setVisible(true);
-                revalidate();
+                //revalidate();
                 repaint();
                 String choixPossibles[] = {"Réessayer", "Nouvelle recherche"};
                 int retour = JOptionPane.showOptionDialog(this, "La recherche n'a donné aucun résultat. Veuillez réessayer en changeant les mots-clefs (cela peut provenir d'une surcharge des serveurs).", "Recherche", 0, 0, null, choixPossibles, choixPossibles[1]); 
@@ -887,6 +960,39 @@ public class Flickr extends JFrame implements ActionListener {
         
         openUrl(this.laPhoto.page_url);
         
+    }
+    
+    public void fetchFavorites() throws FileNotFoundException, IOException{
+        this.favorites = null;
+        this.favorites = new ArrayList<String>();
+        FileInputStream fStream = null;
+        fStream = new FileInputStream("favorites.txt");
+        DataInputStream in = new DataInputStream(fStream);
+        BufferedReader br = new BufferedReader(new InputStreamReader(in));
+        String strLine;
+        while ((strLine = br.readLine()) != null){
+            this.favorites.add(strLine);
+        }
+        Collections.reverse(this.favorites);
+    }
+    
+    public void loadFromFavorites(){
+        this.lesPhotos = null;
+        this.lesPhotos = new ArrayList<Photo>();
+        for(String s: this.favorites){
+            String[] images = s.split("XXX");
+            Photo p = new Photo(images[1], images[0]);
+            this.lesPhotos.add(p);
+        }
+    }
+    
+    public void actionAddToFavorites(){
+        String favoris =
+                this.laPhoto.photo_url_thumb + "XXX" +
+                this.laPhoto.photo_url_big;
+        writeInFile(favoris, "favorites.txt");
+        
+        JOptionPane.showMessageDialog(this, "L'image a bien été ajoutée aux favoris");
     }
     
 }

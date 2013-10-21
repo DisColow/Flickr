@@ -31,6 +31,12 @@ public class Photo {
         this.photo_url = "";
     }
     
+    public Photo(String photo_url_big, String photo_url_thumb){
+        this.photo_url_big = photo_url_big;
+        this.photo_url_thumb = photo_url_thumb;
+        this.photo_url = photo_url_big;
+    }
+    
     public Photo(String id, String owner, String secret, String server, String farm, String title, String photo_url){
         this.id = id;
         this.owner = owner;

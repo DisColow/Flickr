@@ -65,7 +65,7 @@ public class Connexion {
     public static final String SECRET_KEY = "d44f09102f60a452";
     
     public Connexion(String login, String password) throws IOException, SAXException, URISyntaxException, OAuthMessageSignerException, OAuthExpectationFailedException, OAuthCommunicationException{
-        this.login = login;
+        /*this.login = login;
         this.password = password;
         
         BigInteger nonce = new BigInteger(75, new Random());
@@ -97,9 +97,9 @@ public class Connexion {
         for(Entry<String, String> entry: this.authenticationParameters.entrySet()){
             uri.setParameter(entry.getKey(), entry.getValue());
         }
-        URI url = uri.build();
+        URI url = uri.build();*/
         /*consumer.setTokenWithSecret(Connexion.KEY, Connexion.SECRET_KEY);*/
-        HttpGet request = new HttpGet(url);
+        /*HttpGet request = new HttpGet(url);
         System.out.println(request.getURI());
         try {
             consumer.sign(request);
@@ -113,7 +113,7 @@ public class Connexion {
                     
                     InputStream instream = entity.getContent();
                     
-                    System.out.println(convertStreamToString(instream));
+                    System.out.println(convertStreamToString(instream));*/
                     /*System.out.println(resultat);*/
                     
                     /*InputStream is = new ByteArrayInputStream(this.resultat.getBytes());*/
@@ -123,7 +123,7 @@ public class Connexion {
                     saxReader.setContentHandler(new ParserXML());
                     saxReader.parse(s);*/
                     
-                }
+                /*}
             }finally {
                 response.close();
             }
@@ -133,7 +133,7 @@ public class Connexion {
             Logger.getLogger(Recherche.class.getName()).log(Level.SEVERE, null, ex);
         } catch (OAuthCommunicationException ex) {
             Logger.getLogger(Recherche.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        }*/
     }
 
     public String getLogin() {
