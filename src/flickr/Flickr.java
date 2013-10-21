@@ -13,6 +13,7 @@ import java.awt.Font;
 import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.Toolkit;
+import java.awt.color.CMMException;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
@@ -550,9 +551,11 @@ public class Flickr extends JFrame implements ActionListener {
                             this.images[compteurImages].setSize(this.widthImage, this.heightImage);
                             this.images[compteurImages].addActionListener(this);
                         }catch(IllegalArgumentException ex){
-                            
+                            System.err.println("Erreur bizarre.");
                         }catch(IIOException test){
-                            
+                            System.err.println("Bad URL.");
+                        }catch(CMMException test2){
+                            System.err.println("Format de l'image invalide.");
                         }finally{
 
                             compteurImages++;
