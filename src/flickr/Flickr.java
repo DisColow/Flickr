@@ -81,6 +81,7 @@ public class Flickr extends JFrame implements ActionListener {
     
     public String whereAmI;
     public String whereIWas;
+    public String motClef;
     public ArrayList<String> historique;
     public ArrayList<String> favorites;
     
@@ -405,13 +406,20 @@ public class Flickr extends JFrame implements ActionListener {
         }else if(this.whereAmI == Flickr.RESULTATS || this.whereAmI == Flickr.FAVORIS){
             this.addToFavorites.setVisible(false);
             this.goToResults.setVisible(false);
-            this.favoritesList.setVisible(true);
+            if(this.whereAmI != Flickr.FAVORIS || this.whereIWas != Flickr.FAVORIS)
+                this.favoritesList.setVisible(true);
+            else
+                this.favoritesList.setVisible(false);
             this.goToSearch.setVisible(true);
             this.favoritesList.setLocation(12, 97);
             if(this.lesPhotos.size() == Flickr.nbParPage && this.whereAmI != Flickr.FAVORIS)
                 this.nextPage.setVisible(true);
+            else if(this.whereAmI == Flickr.FAVORIS)
+                this.nextPage.setVisible(false);
             if(this.page > 1 && this.whereAmI != Flickr.FAVORIS){
                 this.previousPage.setVisible(true);
+            }else{
+                this.previousPage.setVisible(false);
             }
             this.goToWeb.setVisible(false);
             this.save.setVisible(false);
@@ -626,6 +634,10 @@ public class Flickr extends JFrame implements ActionListener {
             
             try {
                 
+                this.lesPhotos = null;
+                this.images = null;
+                this.imagePanel.setVisible(false);
+                this.panelPhotoZoomed.setVisible(false);
                 this.whereAmI = Flickr.FAVORIS;
                 this.fetchFavorites();
                 this.loadFromFavorites();
@@ -633,6 +645,7 @@ public class Flickr extends JFrame implements ActionListener {
                 this.panelPhotoZoomed.setVisible(false);
 
                 if(this.lesPhotos.size() > 0){
+                    this.reagenceMenu(1);
                     this.panelSearch.setVisible(false);
                     this.ecranImages();
                     this.imagePanel.setVisible(true);
@@ -649,7 +662,8 @@ public class Flickr extends JFrame implements ActionListener {
         }else if(e.getSource() == this.bouton_recherche){
             
             /* Soumission d'une recherche */
-            this.performSearch(this.field_recheche.getText(), true);
+            this.motClef = this.field_recheche.getText();
+            this.performSearch(this.motClef, true);
             
         }else if(e.getSource() == this.showInfos){
             
@@ -661,16 +675,13 @@ public class Flickr extends JFrame implements ActionListener {
             
         }else if( e.getSource() == this.nextPage ){
             
-            System.err.println(this.field_recheche.getText());
-            System.err.println("Prev page:" + this.page);
             this.page++;
-            System.err.println("" + this.page);
-            this.performSearch(this.field_recheche.getText(), false);
+            this.performSearch(this.motClef, false);
             
         }else if( e.getSource() == this.previousPage ){
             
             this.page--;
-            this.performSearch(this.field_recheche.getText(), false);
+            this.performSearch(this.motClef, false);
             
         }else if( e.getSource() == this.goToResults){
             
@@ -718,7 +729,6 @@ public class Flickr extends JFrame implements ActionListener {
                         path = this.laPhoto.photo_url_big;
                     else
                         path = this.laPhoto.photo_url;
-                    System.out.println("Get Image from " + path);
                     URL url = new URL(path);
                     BufferedImage current_image = ImageIO.read(url);
                     ImageIcon theImage = new ImageIcon(current_image);
@@ -731,15 +741,6 @@ public class Flickr extends JFrame implements ActionListener {
                     this.panelPhotoZoomed.add(this.photoZoomed);
                     this.photoZoomed.addActionListener(this);
                     this.photoZoomed.setBounds(0, 0, theImage.getIconWidth(), theImage.getIconHeight());
-                    
-                    /*this.redirectWeb = new JButton("Afficher dans mon navigateur");
-                    this.panelPhotoZoomed.add( this.redirectWeb );
-                    this.redirectWeb.setBounds(0, theImage.getIconHeight(), theImage.getIconWidth(), 33 );
-                    this.redirectWeb.setBackground(new Color(255, 0, 128));
-                    this.redirectWeb.setForeground(Color.white);
-                    this.redirectWeb.setBorder(emptyBorder);
-                    this.redirectWeb.setFont(new Font("Verdana", Font.PLAIN, 16));
-                    this.redirectWeb.addActionListener(this);*/
 
                     this.panelPhotoZoomed.setVisible(true);
                     this.panelPhotoZoomed.setBounds(0, 0, theImage.getIconWidth() + this.menuWidth, theImage.getIconHeight());
@@ -868,7 +869,6 @@ public class Flickr extends JFrame implements ActionListener {
                 if(retour == 0){
                     this.performSearch(motClef, false);
                 }
-                /*JOptionPane.showMessageDialog(panelConnexion, "La recherche n'a donné aucun résultat. Veuillez réessayer en changeant les mots-clefs (cela peut provenir d'une surcharge des serveurs).");*/
             }
 
 
@@ -894,7 +894,9 @@ public class Flickr extends JFrame implements ActionListener {
         
         if( s != null ){
             
-            this.performSearch(s, false);
+            this.page = 1;
+            this.motClef = s;
+            this.performSearch(this.motClef, false);
             
         }
         
@@ -982,6 +984,7 @@ public class Flickr extends JFrame implements ActionListener {
     public void loadFromFavorites(){
         this.lesPhotos = null;
         this.lesPhotos = new ArrayList<Photo>();
+        this.page = 1;
         for(String s: this.favorites){
             String[] images = s.split("XXX");
             Photo p = new Photo(images[1], images[0]);
